@@ -1,6 +1,7 @@
 # controleur-CAPE
 Contrôleur de serre openSource pour petites, moyennes et grosses fermes 
 
+Voir la section Wiki pour plus de détails.
 
 En plus des librairies inclues dans le dossier "Librairie",les librairies suivantes sont nécessaires :
 
