@@ -1,5 +1,7 @@
 # controleur-CAPE
-Contrôleur de serre openSource pour petites, moyennes et grosses fermes 
+Voici le Contrôleur-avec-pas-de-nom, un outil développé par et pour les membres de la CAPÉ (Coopérative pour l'agriculture de proximité écologique) pour permettre aux agriculteur.trice.s de proximité d'automatiser leurs serres à une fraction du coût du marché.
+
+Le code, les schémas, les plans nécessaires à la conception de ce contrôleur sont du domaine public.
 
 Voir la section Wiki pour plus de détails.
 
