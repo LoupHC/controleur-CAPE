@@ -1,3 +1,11 @@
+/*
+  Created by Loup Hébert-Chartrand, December 5, 2019.
+  Released into the public domain.
+  
+  This software is furnished "as is", without technical support, and with no 
+  warranty, express or implied, as to its usefulness for any purpose.
+*/
+
 #include "Arduino.h"
 #include "GreenhouseLib.h"
 #include <OneWire.h>
