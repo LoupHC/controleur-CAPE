@@ -5,6 +5,11 @@
   This code has been made to interface with Arduino-like microcontrollers,
   for inclusion in greenhouse automation devices.
   
+  Supported devices :
+  - DS18B20 temperature sensor
+  - DS3231 RTC module
+  - 20x4 Serial LCD Display
+ 
   You can find the latest version of this code at :
   https://github.com/LoupHC/controleur-CAPE
   
@@ -177,8 +182,6 @@ void setup() {
 //***************************************************
 
 void loop() {
-  Serial.print("Failure : ");
-  Serial.println(sensorFailure);
   //actual time
   getDateAndTime();
   //actual temperature
