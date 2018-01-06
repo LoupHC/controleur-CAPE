@@ -1,4 +1,33 @@
+/*
+  Greenhouse_prototype_CAPE_v.1.1.ino
+  Copyright (C)2017 Loup Hébert-Chartrand. All right reserved  
+  
+  This code has been made to interface with Arduino-like microcontrollers,
+  for inclusion in greenhouse automation devices.
+  
+  Supported devices :
+  - DS18B20 temperature sensor
+  - DS3231 RTC module
+  - 20x4 Serial LCD Display
+  
+  You can find the latest version of this code at :
+  https://github.com/LoupHC/controleur-CAPE
+  
 
+  This code is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+  
+  This code is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+  
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
 /*******************************************************
 /*******************CONTROL PARAMETERS******************
 /*******************************************************
@@ -65,17 +94,17 @@ EXAMPLE :
 #define R1_S4_MOD       3
 #define R1_S4_TARGET    100
 
-Total rotation time is 189 seconds, total closing time is 150 seconds.
-At cooling temperature + 0C, rollup will open at 25%. At cooling temperature +0(mod) -1(hysteresis), it will close back to 0%.
-At cooling temperature + 1C, rollup will open at 50%. At cooling temperature +1(mod) -1(hysteresis), it will close back to 25%(last stage target target increment).
-At cooling temperature + 2C, rollup will open at 75%. At cooling temperature +2(mod) -1(hysteresis), it will close back to 50%(last stage target target increment).
-At cooling temperature + 3C, rollup will open at 100%. At cooling temperature +3(mod) -1(hysteresis), it will close back to 75%(last stage target target increment).
+Total opening time is 189 seconds, total closing time is 150 seconds. Pause between motor movements is 30 seconds.
+Stage 1: At cooling temperature + 0C, rollup will open at 25%. At cooling temperature +0(mod) -1(hysteresis), it will close back to 0%.
+Stage 2: At cooling temperature + 1C, rollup will open at 50%. At cooling temperature +1(mod) -1(hysteresis), it will close back to 25%(last stage target target increment).
+Stage 3: At cooling temperature + 2C, rollup will open at 75%. At cooling temperature +2(mod) -1(hysteresis), it will close back to 50%(last stage target target increment).
+Stage 4: At cooling temperature + 3C, rollup will open at 100%. At cooling temperature +3(mod) -1(hysteresis), it will close back to 75%(last stage target target increment).
 
 If cooling temperature is 24C : 
-At 24C, rollup will open at 25%. At 23C, it will close back to 0%.
-At 25C, rollup will open at 50%. At 24C, it will close back to 25%.
-At 26C, rollup will open at 75%. At 25C, it will close back to 50%.
-At 27C, rollup will open at 100%. At 25C, it will close back to 75%.
+Stage 1: At 24C, rollup will open at 25%. At 23C, it will close back to 0%.
+Stage 2: At 25C, rollup will open at 50%. At 24C, it will close back to 25%.
+Stage 3: At 26C, rollup will open at 75%. At 25C, it will close back to 50%.
+Stage 4: At 27C, rollup will open at 100%. At 25C, it will close back to 75%.
 */
 
 /********************Fans/heaters parameters***************
@@ -108,7 +137,7 @@ At heating reference temperature +-1 (mod) +1 (hyst), furnace will stop.
 
 If cooling reference temperature is 18C :
 At 17C, furnace will start.
-At 19C, furnace will stop.
+At 19C, furnace  stop.
 */ 
 
 //************************************************************
@@ -116,7 +145,7 @@ At 19C, furnace will stop.
 //************************************************************
  
 //********************Geographic/time parameters***************
-#define TIMEZONE      -5                  //(Eastern Time Zone)
+#define TIMEZONE      -5                  //(Eastern Twillime Zone)
 #define LATITUDE      45.50
 #define LONGITUDE    -73.56
 
@@ -171,8 +200,8 @@ TIMEPOINTS PARAMETERS - SYNTAX RULES:
 #define TP4_TYPE        SS
 #define TP4_HOUR        0
 #define TP4_MN_MOD      -60
-#define TP4_HEAT        16
-#define TP4_COOL        18
+#define TP4_HEAT        20
+#define TP4_COOL        24
 //*******************************************************Timepoint 5
 #define TP5_TYPE        SS
 #define TP5_HOUR        0
@@ -189,14 +218,14 @@ ROLLUP PARAMETERS - SYNTAX RULES :
 */
 //*******************************************************Rollup 1 (overral parameters)
 #define R1_HYST         1
-#define R1_ROTUP        189
-#define R1_ROTDOWN      150
-#define R1_PAUSE        30
+#define R1_ROTUP        25
+#define R1_ROTDOWN      25
+#define R1_PAUSE        5
 //*******************************************************Rollup 2 (overral parameters)
 #define R2_HYST         1
-#define R2_ROTUP        189
-#define R2_ROTDOWN      150
-#define R2_PAUSE        30
+#define R2_ROTUP        25
+#define R2_ROTDOWN      25
+#define R2_PAUSE        5
 //*******************************************************************
 /*
 ROLLUP STAGES - SYNTAX RULES :

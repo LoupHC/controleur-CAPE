@@ -9,7 +9,7 @@
   - DS18B20 temperature sensor
   - DS3231 RTC module
   - 20x4 Serial LCD Display
- 
+  
   You can find the latest version of this code at :
   https://github.com/LoupHC/controleur-CAPE
   
@@ -55,18 +55,16 @@
 
 #include "Greenhouse_parameters.h"
 #include "GreenhouseLib.h"
-#include <OneWire.h>
-#include <DallasTemperature.h>
-#include <DS3231.h>
 
 //********************PINOUT**************************
-#define WEST_OPENING_PIN 4 //connect this pin to the opening relay (west motor)
-#define WEST_CLOSING_PIN 5 //connect this pin to the closing relay (west motor)
+#define WEST_OPENING_PIN 7 //connect this pin to the opening relay (west motor)
+#define WEST_CLOSING_PIN 4 //connect this pin to the closing relay (west motor)
 #define EAST_OPENING_PIN 6 //connect this pin to the opening relay (east motor)
-#define EAST_CLOSING_PIN 7 //connect this pin to the closing relay (east motor)
-#define FAN_PIN          2 //Connect this pin to the fan relay
-#define HEATER_PIN       3 //connect this pin to the heater relay
+#define EAST_CLOSING_PIN 5 //connect this pin to the closing relay (east motor)
+#define FAN_PIN          8 //Connect this pin to the fan relay
+#define HEATER_PIN       9 //connect this pin to the heater relay
 #define ONE_WIRE_BUS     A1 //connect this pin to the DS18B20 data line
+#define DHT_PIN          2
 
 //********************GREENHOUSE**************************
 
@@ -91,27 +89,27 @@ Rollup &rollup2 = greenhouse.rollup[1];
 Fan &fan1 = greenhouse.fan[0];
 Heater &heater1 = greenhouse.heater[0];
 
-//********************INPUT**************************
-
-//Create DS18B20 object
-OneWire oneWire(ONE_WIRE_BUS);
-DallasTemperature sensors(&oneWire);
-
-//Create a RTC object
-DS3231  rtc(SDA, SCL);                // Init the DS3231 using the hardware interface
-Time  t;
-
 //********************VARIABLES**************************
 
 //Time array
-byte rightNow[6];
+byteParameter rightNow[6];
+byte rightNowValue[6];
 //Temperature inside the greenhouse
-float greenhouseTemperature;
+floatParameter greenhouseTemperature;
+floatParameter greenhouseHumidity;
+
 boolean sensorFailure = false;
 //********************INTERFACE**************************
 
 //See "Greenhouse_interface.h" for LCD display functions
 #include "Greenhouse_interface.h"
+
+
+//********************SENSORS**************************
+
+//See "Greenhouse_interface.h" for sensor functions
+#include "Greenhouse_sensors.h"
+
 
 
 //***************************************************
@@ -120,13 +118,26 @@ boolean sensorFailure = false;
 
 void setup() {
   //start communication with serial monitor
-  Serial.begin(9600);
-  //start communication with temp probe
+  Serial.begin(115200);
+  //start communication with interface
   initLCD(20,4);
+
+  #ifdef KEYPAD_MENU
+    keypad.begin( makeKeymap(keys) );
+  #endif
+
   //start communication with temp probe
   sensors.begin();
-  //start communication with temp probe
+  sensors.setResolution(12);
+  dht.begin();
+
+  //start communication with clock
   rtc.begin();
+  
+  #ifdef I2C_OUTPUTS
+    //start communication with relay driver
+    mcp.begin();
+  #endif
   
   // change RTC settings
   #ifdef RTC_TIME_SET
@@ -138,7 +149,7 @@ void setup() {
   //get RTC values
   getDateAndTime();
   //set time within greenhouse object
-  greenhouse.setNow(rightNow);
+  greenhouse.setNow(rightNowValue);
   //calculate hour saving, sunrise, sunset
   greenhouse.solarCalculations();
   
@@ -164,16 +175,15 @@ void setup() {
   rollup2.setStageParameters(3,R2_S3_MOD, R2_S3_TARGET);
   rollup2.setStageParameters(4,R2_S4_MOD, R2_S4_TARGET);
   //*************************Fan**************************
-  fan1.initOutput(VAR_TEMP, FAN_PIN);
+  fan1.initOutput(VAR_TEMP, ACT_HIGH, FAN_PIN);
   fan1.setParameters(F1_MOD, F1_HYST, true);
   //************************Heater************************    
-  heater1.initOutput(VAR_TEMP, HEATER_PIN);
+  heater1.initOutput(VAR_TEMP, ACT_HIGH, HEATER_PIN);
   heater1.setParameters(H1_MOD, H1_HYST, true);
   //******************************************************
 
   //actual time, timepoint and targetTemp
-  greenhouse.startingParameters();  ;
-  
+  greenhouse.startingParameters();  
 }
 
 
@@ -189,7 +199,7 @@ void loop() {
   //diplay infos on LCD screen
   lcdDisplay();
   //timepoint and target temperatures definitions, outputs routine
-  greenhouse.fullRoutine(rightNow, greenhouseTemperature);
+  greenhouse.fullRoutine(rightNowValue, greenhouseTemperature.value());
 }
 
 
@@ -198,37 +208,5 @@ void loop() {
 //***************************************************
 
 
-void getDateAndTime(){
-  t = rtc.getTime();
-  rightNow[5] = t.year-2000;
-  rightNow[4] = t.mon;
-  rightNow[3] = t.date;
-  rightNow[HOUR] = t.hour;
-  rightNow[MINUT] = t.min;
-  rightNow[0] = t.sec;
-  
-  #ifdef DEBUG_CLOCK
-  for(int x = 0; x < sizeof(rightNow); x++){
-    Serial.print(rightNow[x]);
-    Serial.print(":");
-  }
-  Serial.println("");
-  #endif
-}
 
-
-void getGreenhouseTemp(){
-    sensors.requestTemperatures();
-    float temp = sensors.getTempCByIndex(0);
-    
-    if((temp == -127.00)||(temp == 85.00)){
-      temp = greenhouse._coolingTemp+10;
-      greenhouseTemperature = temp;
-      sensorFailure = true;
-    }
-    else{
-      greenhouseTemperature = temp;
-      sensorFailure = false;
-    }
-}
 
