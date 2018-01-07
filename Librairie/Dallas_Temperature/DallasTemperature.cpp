@@ -1,3 +1,11 @@
+/*
+***********************************************************************
+MODIFIED VERSION - USE MILLIS INSTEAD OF DELAY TO WAIT BETWEEN READINGS
+REQUIRE elapsedMillis LIBRARY (V.1.0.4) 
+https://github.com/pfeerick/elapsedMillis
+***********************************************************************
+*/
+
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
 // License as published by the Free Software Foundation; either
@@ -54,6 +62,7 @@ void DallasTemperature::begin(void){
 
     _wire->reset_search();
     devices = 0; // Reset the number of devices when we enumerate wire devices
+    startWaiting = false;
 
     while (_wire->search(deviceAddress)){
 
@@ -368,11 +377,17 @@ bool DallasTemperature::requestTemperaturesByAddress(const uint8_t* deviceAddres
 void DallasTemperature::blockTillConversionComplete(uint8_t bitResolution, const uint8_t* deviceAddress){
     
     int delms = millisToWaitForConversion(bitResolution);
-    if (deviceAddress != NULL && checkForConversion && !parasite){
+    if (deviceAddress != NULL && checkForConversion && !parasite && startWaiting == false){
         unsigned long now = millis();
         while(!isConversionAvailable(deviceAddress) && (millis() - delms < now));
     } else {
-        delay(delms);
+    		if(startWaiting == false){    			
+		  		millisDelay = 0;
+		  		startWaiting = true; 
+    		}
+    		if(millisDelay > delms){
+    			startWaiting == false;
+    		}
     }
     
 }

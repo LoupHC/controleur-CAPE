@@ -1,3 +1,11 @@
+/*
+***********************************************************************
+MODIFIED VERSION - USE MILLIS INSTEAD OF DELAY TO WAIT BETWEEN READINGS
+REQUIRE elapsedMillis LIBRARY (V.1.0.4) 
+https://github.com/pfeerick/elapsedMillis
+***********************************************************************
+*/
+
 #ifndef DallasTemperature_h
 #define DallasTemperature_h
 
@@ -59,6 +67,8 @@
 #define DEVICE_DISCONNECTED_RAW -7040
 
 typedef uint8_t DeviceAddress[8];
+
+#include "elapsedMillis.h"
 
 class DallasTemperature
 {
@@ -228,6 +238,9 @@ public:
 #endif
 
 private:
+	elapsedMillis millisDelay;
+	bool startWaiting;
+
     typedef uint8_t ScratchPad[9];
 
     // parasite power on or off
