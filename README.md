@@ -13,7 +13,7 @@ Le code, les schémas, les plans nécessaires à la conception de ce contrôleur
 
 Pour des détails quant  l'utilisation du présent code, consultez la section wiki.
 
-Pour exécuter le programme, vous devez préalablement déplacer toutes les fichiers du dossier "Librairie" dans la banque de librairie de votre IDE.
+Pour exécuter le programme, vous devez préalablement déplacer toutes les fichiers du dossier "Librairie" ainsi que le dossier GreenhouseLib dans la banque de librairie de votre IDE.
 
 Aperçu des librairies nécessaires: 
 - GreenhouseLib : fonctions liées au contrôle du climat
