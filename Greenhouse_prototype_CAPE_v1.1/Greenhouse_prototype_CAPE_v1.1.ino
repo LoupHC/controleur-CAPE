@@ -57,14 +57,14 @@
 #include "GreenhouseLib.h"
 
 //********************PINOUT**************************
-#define WEST_OPENING_PIN 7 //connect this pin to the opening relay (west motor)
-#define WEST_CLOSING_PIN 4 //connect this pin to the closing relay (west motor)
-#define EAST_OPENING_PIN 6 //connect this pin to the opening relay (east motor)
-#define EAST_CLOSING_PIN 5 //connect this pin to the closing relay (east motor)
-#define FAN_PIN          8 //Connect this pin to the fan relay
-#define HEATER_PIN       9 //connect this pin to the heater relay
-#define ONE_WIRE_BUS     A1 //connect this pin to the DS18B20 data line
-#define DHT_PIN          2
+#define WEST_OPENING_PIN  7 //connect this pin to the opening relay (west motor)
+#define WEST_CLOSING_PIN  6 //connect this pin to the closing relay (west motor)
+#define EAST_OPENING_PIN  5 //connect this pin to the opening relay (east motor)
+#define EAST_CLOSING_PIN  3 //connect this pin to the closing relay (east motor)
+#define FAN_PIN           8 //Connect this pin to the fan relay
+#define HEATER_PIN        9 //connect this pin to the heater relay
+#define TEMP_SENSOR       A1 //connect this pin to the DS18B20 data line
+#define HUMIDITY_SENSOR   A2
 
 //********************GREENHOUSE**************************
 
@@ -118,27 +118,31 @@ boolean sensorFailure = false;
 
 void setup() {
   //start communication with serial monitor
-  Serial.begin(115200);
-  //start communication with interface
+  Serial.begin(9600);
+  //start communication with LCD
   initLCD(20,4);
-
+  //start communication with keypad
   #ifdef KEYPAD_MENU
     keypad.begin( makeKeymap(keys) );
   #endif
-
   //start communication with temp probe
-  sensors.begin();
-  sensors.setResolution(12);
-  dht.begin();
-
-  //start communication with clock
-  rtc.begin();
-  
-  #ifdef I2C_OUTPUTS
-    //start communication with relay driver
-    mcp.begin();
+  #ifdef TEMP_DS18B20
+    sensors.begin();
+    sensors.setResolution(12);
   #endif
-  
+  //start communication with humidity probe
+  #ifdef HUMIDITY_DHT
+    dht.begin();
+  #endif
+  //start communication with clock
+  #ifdef CLOCK_DS3231
+    rtc.begin();
+    delay(1000);
+  #endif
+  //start communication with relay driver  
+  #ifdef I2C_OUTPUTS
+    mcp.begin();
+  #endif 
   // change RTC settings
   #ifdef RTC_TIME_SET
     rtc.setTime(HOUR_SET, MINUT_SET, SECOND_SET);
@@ -148,8 +152,10 @@ void setup() {
   #endif
   //get RTC values
   getDateAndTime();
+  
   //set time within greenhouse object
   greenhouse.setNow(rightNowValue);
+  
   //calculate hour saving, sunrise, sunset
   greenhouse.solarCalculations();
   
@@ -182,6 +188,7 @@ void setup() {
   heater1.setParameters(H1_MOD, H1_HYST, true);
   //******************************************************
 
+  Serial.println("Check5");
   //actual time, timepoint and targetTemp
   greenhouse.startingParameters();  
 }
@@ -200,6 +207,7 @@ void loop() {
   lcdDisplay();
   //timepoint and target temperatures definitions, outputs routine
   greenhouse.fullRoutine(rightNowValue, greenhouseTemperature.value());
+  delay(1000);
 }
 
 

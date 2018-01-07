@@ -154,8 +154,8 @@ At 19C, furnace  stop.
 //ALWAYS SET TO WINTER TIMER
 
 //#define RTC_TIME_SET
-#define HOUR_SET       21
-#define MINUT_SET      6
+#define HOUR_SET       18
+#define MINUT_SET      39
 #define SECOND_SET     30
 
 //1. Uncomment (by erasing the "//") the following line and upload to set date
@@ -163,9 +163,9 @@ At 19C, furnace  stop.
 //ALWAYS SET TO WINTER TIMER
 
 //#define RTC_DATE_SET
-#define DAY_SET        8
-#define MONTH_SET      12
-#define YEAR_SET       2017
+#define DAY_SET        6
+#define MONTH_SET      01
+#define YEAR_SET       2018
 
 //*******************************************************************
 /*
