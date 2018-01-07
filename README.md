@@ -12,8 +12,8 @@ Le programme supporte la sonde de température DS18B20 et le module d'horloge DS
 Le code, les schémas, les plans nécessaires à la conception de ce contrôleur sont du domaine public.Le code, les schémas et les plans nécessaires à la conception de ce contrôleur sont certifiés open-source, donc appartiennent au domaine public. Ils peuvent être utilisés, modifiés, hackés, par n'importe qui, pour n'importe quel usage, tant que les termes de la license GPL sont respectés.
 
 Pour des détails quant  l'utilisation du présent code, consultez la section wiki.
-
-Pour exécuter le programme, vous devez préalablement déplacer toutes les fichiers du dossier "Librairie" ainsi que le dossier GreenhouseLib dans la banque de librairie de votre IDE.
+##Librairies##
+Pour exécuter le programme, vous devez préalablement déplacer toutes les fichiers du dossier "Librairie" ainsi que le dossier "GreenhouseLib" dans la banque de librairie de votre IDE.
 
 Aperçu des librairies nécessaires: 
 - GreenhouseLib : fonctions liées au contrôle du climat
