@@ -1,7 +1,7 @@
 /*
 ***********************************************************************
 MODIFIED VERSION - USE MILLIS INSTEAD OF DELAY TO WAIT BETWEEN READINGS
-REQUIRE elapsedMillis LIBRARY (V.1.0.4) 
+REQUIRE elapsedMillis LIBRARY (V.1.0.4)
 https://github.com/pfeerick/elapsedMillis
 ***********************************************************************
 */
@@ -208,7 +208,7 @@ bool DallasTemperature::setResolution(const uint8_t* deviceAddress, uint8_t newR
 
 	// ensure same behavior as setResolution(uint8_t newResolution)
 	newResolution = constrain(newResolution, 9, 12);
-			
+
     // return when stored value == new value
     if(getResolution(deviceAddress) == newResolution) return true;
 
@@ -237,7 +237,7 @@ bool DallasTemperature::setResolution(const uint8_t* deviceAddress, uint8_t newR
 
             // without calculation we can always set it to max
 			bitResolution = max(bitResolution, newResolution);
-			
+
 			if(!skipGlobalBitResolutionCalculation && (bitResolution > newResolution)){
 				bitResolution = newResolution;
 				DeviceAddress deviceAddr;
@@ -375,21 +375,21 @@ bool DallasTemperature::requestTemperaturesByAddress(const uint8_t* deviceAddres
 
 // Continue to check if the IC has responded with a temperature
 void DallasTemperature::blockTillConversionComplete(uint8_t bitResolution, const uint8_t* deviceAddress){
-    
+
     int delms = millisToWaitForConversion(bitResolution);
     if (deviceAddress != NULL && checkForConversion && !parasite && startWaiting == false){
         unsigned long now = millis();
         while(!isConversionAvailable(deviceAddress) && (millis() - delms < now));
     } else {
-    		if(startWaiting == false){    			
+    		if(startWaiting == false){
 		  		millisDelay = 0;
-		  		startWaiting = true; 
+		  		startWaiting = true;
     		}
-    		if(millisDelay > delms){
-    			startWaiting == false;
+    		if(millisDelay > (unsigned int)delms){
+    			startWaiting = false;
     		}
     }
-    
+
 }
 
 // returns number of milliseconds to wait till conversion is complete (based on IC datasheet)
@@ -649,7 +649,7 @@ void DallasTemperature::setHighAlarmTemp(const uint8_t* deviceAddress, char cels
 // accepts a float, but the alarm resolution will ignore anything
 // after a decimal point.  valid range is -55C - 125C
 void DallasTemperature::setLowAlarmTemp(const uint8_t* deviceAddress, char celsius){
-    
+
     // return when stored value == new value
     if(getLowAlarmTemp(deviceAddress) == celsius) return;
 
