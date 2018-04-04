@@ -231,18 +231,17 @@ void Rollup::routine(boolean condition, float targetTemp, float temp){
   */
   void Rollup::openOrClose(float temp, float targetTemp){
     if (temp >= (targetTemp + stage[_upperStage].mod.value())){
-        openToInc(_upperStage, stage[_upperStage].target.value());
+        if((_opening == false)&&(_closing == false)&&(_routineCycle == false)){
+          startMove(_upperStage, stage[_upperStage].target.value());
+        }
     }
     else if(temp < (targetTemp + stage[_stage].mod.value() - hyst.value())){
-        openToInc(_lowerStage, stage[_lowerStage].target.value());
+        if((_opening == false)&&(_closing == false)&&(_routineCycle == false)){
+          startMove(_lowerStage,  stage[_lowerStage].target.value());
+        }
     }
   }
 
-  void Rollup::openToInc(unsigned short targetStage, unsigned short targetIncrement){
-      if((_opening == false)&&(_closing == false)&&(_routineCycle == false)){
-        startMove(targetStage, targetIncrement);
-      }
-  }
 
 
 /*OVERRIDES ACTION TRIGGER

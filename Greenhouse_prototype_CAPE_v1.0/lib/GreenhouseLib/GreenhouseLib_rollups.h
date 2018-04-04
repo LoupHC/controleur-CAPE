@@ -155,7 +155,6 @@ class Rollup
 		static unsigned short _counter;
 
     void openOrClose(float temp, float targetTemp);
-    void openToInc(unsigned short targetStage, unsigned short targetIncrement);
 		//private functions
     void action(byte pin, boolean state);
     //Mode MAN_TEMP
