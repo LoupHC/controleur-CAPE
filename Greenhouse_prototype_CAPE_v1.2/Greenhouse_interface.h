@@ -34,6 +34,7 @@
 //***************************************************
 #define MODE_DISPLAY           1
 #define MODE_PROGRAM           2
+#define MODE_ACTION            3
 #define SET_PARAMETER     21
 #define ACTION            3
 
@@ -171,6 +172,9 @@ byte typeSet;
 unsigned short hourSet;
 unsigned short minSet;
 
+boolean confirm = false;
+byte action = 0;
+
 
 byte data_count = 0, master_count = 0;
 bool Pass_is_good;
@@ -206,64 +210,96 @@ void initLCD(byte length, byte width){
   lcd.clear();
 }
 
-void lcdPrintOutput(String item, byte _column, byte _row, byte pin){
+void lcdPrintOutput(String item, byte _column, byte _row, Fan fan){
     //Fan
     lcd.setCursor(_column, _row); lcd.print(F("          "));
     lcd.setCursor(_column, _row); lcd.print(item);
-
-    #ifdef I2C_OUTPUTS
-      if(mcp.digitalRead(pin) == HIGH){
-        lcd.print(F("ON"));
+    if(fan.isActive() == true){
+        lcd.print(F("ON "));
       }
-
     else{
       lcd.print(F("OFF"));
     }
-    #endif
-
-    #ifdef IOS_OUTPUTS
-      if(digitalRead(pin) == HIGH){
-        lcd.print(F("ON"));
+    if(fan.override() == true){
+      lcd.setCursor(_column+8, _row);
+      lcd.print ("*");
+    }
+    else{
+      lcd.setCursor(_column+8, _row);
+      lcd.print (" ");
+    }
+}
+void lcdPrintOutput(String item, byte _column, byte _row, Heater heater){
+    //Fan
+    lcd.setCursor(_column, _row); lcd.print(F("          "));
+    lcd.setCursor(_column, _row); lcd.print(item);
+    if(heater.isActive() == true){
+        lcd.print(F("ON "));
       }
-
     else{
       lcd.print(F("OFF"));
     }
-    #endif
-
+    if(heater.override() == true){
+      lcd.setCursor(_column+8, _row);
+      lcd.print ("*");
+    }
+    else{
+        lcd.setCursor(_column+8, _row);
+      lcd.print (" ");
+    }
 }
 void lcdPrintRollups(String side, String opening, String closing, byte _column, byte _row, Rollup rollup, byte* counter){
-    //East rollup
-    lcd.setCursor(_column, _row); lcd.print(F("          "));
-    lcd.setCursor(_column, _row);
-    if(rollup.incrementCounter() == OFF_VAL){lcd.print(F(""));}
-    else if (rollup.opening() == true){lcd.print(opening);}
-    else if (rollup.closing() == true){lcd.print(closing);}
-    else if(((rollup.closing() == false)&&(rollup.closingCycle() == true))||((rollup.opening() == false)&&(rollup.openingCycle() == true))){
-      if(*counter == 0){
-        lcd.print(side); lcd.print(rollup.incrementCounter());lcd.print(F("%"));
-        *counter += 1;
-      }
-      else if(*counter == 1){
-        lcd.print(F("          "));
-        *counter = 0;
-      }
+  //East rollup
+  lcd.setCursor(_column, _row); lcd.print(F("          "));
+  lcd.setCursor(_column, _row);
+  if(rollup.incrementCounter() == OFF_VAL){lcd.print(F(""));}
+  else if (rollup.opening() == true){lcd.print(opening);}
+  else if (rollup.closing() == true){lcd.print(closing);}
+  else if(rollup.isWaiting()){
+    if(*counter == 0){
+      lcd.print(side); lcd.print(rollup.incrementCounter());lcd.print(F("%"));
+      *counter += 1;
     }
-    else{lcd.print(side); lcd.print(rollup.incrementCounter());lcd.print(F("%"));}
-
-}
+    else if(*counter == 1){
+      lcd.print(F("          "));
+      *counter = 0;
+    }
+  }
+  else{lcd.print(side); lcd.print(rollup.incrementCounter());lcd.print(F("%"));}
+  if(rollup.override() == true){
+    lcd.setCursor(_column+8, _row);
+    lcd.print ("*");
+  }
+  else{
+      lcd.setCursor(_column+8, _row);
+      lcd.print (" ");
+    }
+  }
 void lcdPrintTemp(byte _row){
 
     lcd.setCursor(0,_row); lcd.print(F("         "));
     lcd.setCursor(0,_row);
     if(sensorFailure == false){lcd.print(greenhouseTemperature.value()); lcd.print(F("C"));}
     else if(sensorFailure == true){lcd.print(F("!!!"));}
-    lcd.setCursor(9,_row); lcd.print(F("|(TIMEP: ")); lcd.print(greenhouse._timepoint); lcd.print(F(") "));
+}
+
+void lcdPrintTarget(){
+  lcd.setCursor(9,0);
+   lcd.print(F("|")); lcd.print((int)heatingTemperature); lcd.print(F("-"));lcd.print((int)coolingTemperature);
+
+   if(greenhouse.weather() == SUN){
+     lcd.print("(SUN)");
+   }
+   else{
+     lcd.print("(CLD)");
+   }
+
 
 }
 
 void lcdPrintTime(byte _row){
-    lcd.setCursor(0,_row); lcdPrintDigits(greenhouse.rightNow(2)); lcd.print(F(":")); lcdPrintDigits(greenhouse.rightNow(1));lcd.print(F(":")); lcdPrintDigits(greenhouse.rightNow(0));  lcd.print(F(" |")); lcdPrintDigits(greenhouse.rightNow(3)); lcd.print(F("/")); lcdPrintDigits(greenhouse.rightNow(4)); lcd.print(F("/")); lcdPrintDigits(2000+greenhouse.rightNow(5));
+    lcd.setCursor(0,_row); lcdPrintDigits(greenhouse.rightNow(2)); lcd.print(F(":")); lcdPrintDigits(greenhouse.rightNow(1));lcd.print(F(":")); lcdPrintDigits(greenhouse.rightNow(0)); // lcd.print(F(" |")); lcdPrintDigits(greenhouse.rightNow(3)); lcd.print(F("/")); lcdPrintDigits(greenhouse.rightNow(4)); lcd.print(F("/")); lcdPrintDigits(2000+greenhouse.rightNow(5));
+    lcd.setCursor(9,_row); lcd.print(F("|(TIMEP: ")); lcd.print(greenhouse.nowTimepoint()); lcd.print(F(") "));
 }
 
 void lcdPrintOutputs(){
@@ -275,18 +311,18 @@ void lcdPrintOutputs(){
   #endif
 
   #if FANS == 1 && HEATERS == 0
-    lcdPrintOutput("F1: ", 0, 3, FAN1_PIN);
+    lcdPrintOutput("F1: ", 0, 3, F1);
   #elif FANS == 1 && HEATERS == 1
-    lcdPrintOutput("F1: ", 0, 3, FAN1_PIN);
-    lcdPrintOutput("|H1: ", 9, 3, HEATER1_PIN);
+    lcdPrintOutput("F1: ", 0, 3, F1);
+    lcdPrintOutput("|H1: ", 9, 3, H1);
   #elif FANS == 2 && HEATERS == 0
-    lcdPrintOutput("F1: ", 0, 3, FAN1_PIN);
-    lcdPrintOutput("|F2: ", 9, 3, FAN2_PIN);
+    lcdPrintOutput("F1: ", 0, 3, F1);
+    lcdPrintOutput("|F2: ", 9, 3, F2);
   #elif FANS == 0 && HEATERS == 1
-    lcdPrintOutput("H1: ", 0, 3, HEATER1_PIN);
+    lcdPrintOutput("H1: ", 0, 3, H1);
   #elif FANS == 0 && HEATERS == 2
-    lcdPrintOutput("H1: ", 0, 3, HEATER1_PIN);
-    lcdPrintOutput("|H2: ", 9, 3, HEATER2_PIN);
+    lcdPrintOutput("H1: ", 0, 3, H1);
+    lcdPrintOutput("|H2: ", 9, 3, H2);
   #else
     lcd.setCursor(0, 3);
     lcd.print(F("                    "));
@@ -314,6 +350,7 @@ void homeDisplay(){
       rightNow[x].updateLastValue();
     }
   }
+  lcdPrintTarget();
   lcdPrintOutputs();
 }
 
@@ -341,7 +378,7 @@ void adjustLine(){
 
 void rollupDisplay(Rollup rollup){
 
-  printHeader("ROLLUP - PARAMET ",4);
+  printHeader("ROLLUP - PARAMET ",3);
   if(firstPrint == true){
     lcd.print("(");
     lcd.print(rollup.nb()+1);
@@ -357,22 +394,21 @@ void rollupDisplay(Rollup rollup){
       writeLine = maxLine;
     }
     switch(writeLine){
-      case 1: lcd.setCursor(0,x);lcd.print(F("UP: ")); lcd.print(rollup.rotationUp());lcd.print(F("s")); lcd.setCursor(9,x);lcd.print(F("|DOWN: ")); lcd.print(rollup.rotationDown());lcd.print(F("s"));break;
-      case 2: lcd.setCursor(0,x);lcd.print(F("Pause: ")); lcd.print(rollup.pause());lcd.print(F("s"));break;
-      case 3:  lcd.setCursor(0,x);lcd.print(F("Hyst:  "));  lcd.print(rollup.hyst());lcd.print(F("C"));break;
-      case 4:  lcd.setCursor(0,x);lcd.print(F("Something else"));break;
+      case 1: lcd.setCursor(0,x);lcd.print(F("UP: ")); lcd.print(rollup.rotationUp.value());lcd.print(F("s")); lcd.setCursor(9,x);lcd.print(F("|DOWN: ")); lcd.print(rollup.rotationDown.value());lcd.print(F("s"));break;
+      case 2: lcd.setCursor(0,x);lcd.print(F("Pause: ")); lcd.print(rollup.pause.value());lcd.print(F("s"));break;
+      case 3:  lcd.setCursor(0,x);lcd.print(F("Hyst:  "));  lcd.print(rollup.hyst.value());lcd.print(F("C"));break;
     }
   }
 }
 
 void stageDisplay(Rollup rollup){
 
-  float stageTemp1 = greenhouse._coolingTemp + rollup.stageMod(1);
-  float stageTemp2 = greenhouse._coolingTemp + rollup.stageMod(2);
-  float stageTemp3 = greenhouse._coolingTemp + rollup.stageMod(3);
-  float stageTemp4 = greenhouse._coolingTemp + rollup.stageMod(4);
+  float stageTemp1 = greenhouse.coolingTemp() + rollup.stage[1].mod.value();
+  float stageTemp2 = greenhouse.coolingTemp() + rollup.stage[2].mod.value();
+  float stageTemp3 = greenhouse.coolingTemp() + rollup.stage[3].mod.value();
+  float stageTemp4 = greenhouse.coolingTemp() + rollup.stage[4].mod.value();
 
-  printHeader("ROLLUP - STAGES ",4);
+  printHeader("ROLLUP - STAGES ",STAGES);
   if(firstPrint == true){
     lcd.print("(");
     lcd.print(rollup.nb()+1);
@@ -382,24 +418,28 @@ void stageDisplay(Rollup rollup){
   adjustLine();
 
   //print content
-  for(int x = 1; x < 4; x++){
+  int maxLines = STAGES+1;
+  if(maxLines > 4){
+    maxLines = 4;
+  }
+  for(int x = 1; x < maxLines; x++){
     int writeLine = x+line;
     if (writeLine > maxLine){
       writeLine = maxLine;
     }
     switch(writeLine){
-      case 1:  lcd.setCursor(0,x);lcd.print(F("S1: ")); lcd.print(stageTemp1);lcd.print(F("-"));lcd.print(stageTemp2);lcd.print(F("-")); lcd.print(rollup.stageTarget(1)); lcd.print(F("%"));break;
-      case 2:  lcd.setCursor(0,x);lcd.print(F("S2: ")); lcd.print(stageTemp2);lcd.print(F("-"));lcd.print(stageTemp3);lcd.print(F("-")); lcd.print(rollup.stageTarget(2)); lcd.print(F("%"));break;
-      case 3:  lcd.setCursor(0,x);lcd.print(F("S3: ")); lcd.print(stageTemp3);lcd.print(F("-"));lcd.print(stageTemp4);lcd.print(F("-")); lcd.print(rollup.stageTarget(3)); lcd.print(F("%"));break;
-      case 4:  lcd.setCursor(0,x);lcd.print(F("S4: ")); lcd.print(stageTemp4);lcd.print(F("- ... "));lcd.print(F("-")); lcd.print(rollup.stageTarget(4)); lcd.print(F("%"));break;
+      case 1:  lcd.setCursor(0,x);lcd.print(F("S1: ")); lcd.print(stageTemp1);lcd.print(F("-"));lcd.print(stageTemp2);lcd.print(F("-")); lcd.print(rollup.stage[1].target.value()); lcd.print(F("%"));break;
+      case 2:  lcd.setCursor(0,x);lcd.print(F("S2: ")); lcd.print(stageTemp2);lcd.print(F("-"));lcd.print(stageTemp3);lcd.print(F("-")); lcd.print(rollup.stage[2].target.value()); lcd.print(F("%"));break;
+      case 3:  lcd.setCursor(0,x);lcd.print(F("S3: ")); lcd.print(stageTemp3);lcd.print(F("-"));lcd.print(stageTemp4);lcd.print(F("-")); lcd.print(rollup.stage[3].target.value()); lcd.print(F("%"));break;
+      case 4:  lcd.setCursor(0,x);lcd.print(F("S4: ")); lcd.print(stageTemp4);lcd.print(F("- ... "));lcd.print(F("-")); lcd.print(rollup.stage[4].target.value()); lcd.print(F("%"));break;
     }
   }
 }
 
 void fanDisplay(Fan fan){
 
-  float onTemp = greenhouse._coolingTemp + fan.mod();
-  float offTemp = greenhouse._coolingTemp + fan.mod() - fan.hyst();
+  float onTemp = greenhouse.coolingTemp() + fan.mod.value();
+  float offTemp = greenhouse.coolingTemp() + fan.mod.value() - fan.hyst.value();
 
   printHeader("FAN - PARAMETERS ",3);
   if(firstPrint == true){
@@ -419,15 +459,15 @@ void fanDisplay(Fan fan){
     switch(writeLine){
       case 1: lcd.setCursor(0,x);lcd.print(F("Activ. temp: ")); lcd.print(onTemp);lcd.print(F("C"));break;
       case 2: lcd.setCursor(0,x);lcd.print(F("Shut. temp: ")); lcd.print(offTemp);lcd.print(F("C"));break;
-      case 3: lcd.setCursor(0,x);lcd.print(F("MOD:")); if(fan.mod() >= 0){lcd.print(F(" "));}lcd.print(fan.mod()); lcd.setCursor(9,3);lcd.print(F("|HYST: ")); lcd.print(fan.hyst());break;
+      case 3: lcd.setCursor(0,x);lcd.print(F("MOD:")); if(fan.mod.value() >= 0){lcd.print(F(" "));}lcd.print(fan.mod.value()); lcd.setCursor(9,3);lcd.print(F("|HYST: ")); lcd.print(fan.hyst.value());break;
     }
   }
 }
 
 void heaterDisplay(Heater heater){
 
-  float onTemp = greenhouse._heatingTemp + heater.mod();
-  float offTemp = greenhouse._heatingTemp + heater.mod() + heater.hyst();
+  float onTemp = greenhouse.heatingTemp() + heater.mod.value();
+  float offTemp = greenhouse.heatingTemp() + heater.mod.value() + heater.hyst.value();
 
   printHeader("HEATER - PARAMET ",3);
   if(firstPrint == true){
@@ -447,70 +487,142 @@ void heaterDisplay(Heater heater){
     switch(writeLine){
       case 1: lcd.setCursor(0,x);lcd.print(F("Activ. temp: ")); lcd.print(onTemp);lcd.print(F("C"));break;
       case 2: lcd.setCursor(0,x);lcd.print(F("Shut. temp: ")); lcd.print(offTemp);lcd.print(F("C"));break;
-      case 3: lcd.setCursor(0,x);lcd.print(F("MOD:")); if(heater.mod() >= 0){lcd.print(F(" "));}lcd.print(heater.mod()); lcd.setCursor(9,3);lcd.print(F("|HYST: ")); lcd.print(heater.hyst());break;
+      case 3: lcd.setCursor(0,x);lcd.print(F("MOD:")); if(heater.mod.value() >= 0){lcd.print(F(" "));}lcd.print(heater.mod.value()); lcd.setCursor(9,3);lcd.print(F("|HYST: ")); lcd.print(heater.hyst.value());break;
     }
   }
 }
 
 void timepointsDisplay(){
-  printHeader("TIMEPOINTS - TIME",4);
+  printHeader("TIMEPOINTS - TIME",TIMEPOINTS);
+  if(firstPrint == true){
+    firstPrint = false;
+  }
   adjustLine();
 
   //print content
-  for(int x = 1; x < 4; x++){
+  int maxLines = TIMEPOINTS+1;
+  if(maxLines > 4){
+    maxLines = 4;
+  }
+  for(int x = 1; x < maxLines; x++){
     int writeLine = x+line;
     if (writeLine > maxLine){
       writeLine = maxLine;
     }
 
     switch(writeLine){
-      case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());lcd.print(F("-")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());
-      switch (T1.type()){
+      case 1:
+      #if TIMEPOINTS > 1
+        lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());lcd.print(F("-")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());
+      #endif
+      #if TIMEPOINTS >1
+      switch (T1.type.value()){
         case 0: lcd.print("(SR)");break;
         case 1: lcd.print("(CL)");break;
         case 2: lcd.print("(SS)");break;
       }
+      #endif
       break;
-      case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());lcd.print(F("-")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());
-      switch (T2.type()){
+      case 2:
+      #if TIMEPOINTS == 2
+        lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
+      #elif TIMEPOINTS >2
+        lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());lcd.print(F("-")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());
+      #endif
+      #if TIMEPOINTS >=2
+      switch (T2.type.value()){
         case 0: lcd.print("(SR)");break;
         case 1: lcd.print("(CL)");break;
         case 2: lcd.print("(SS)");break;
       }
+      #endif
       break;
-      case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());lcd.print(F("-")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());
-      switch (T3.type()){
+      case 3:
+      #if TIMEPOINTS ==3
+      lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
+      #elif TIMEPOINTS > 3
+      lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());lcd.print(F("-")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());
+      #endif
+      #if TIMEPOINTS >=3
+      switch (T3.type.value()){
         case 0: lcd.print("(SR)");break;
         case 1: lcd.print("(CL)");break;
         case 2: lcd.print("(SS)");break;
       }
+      #endif
       break;
-      case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
-      switch (T4.type()){
+      case 4:
+      #if TIMEPOINTS ==4
+      lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
+      #endif
+      #if TIMEPOINTS ==4
+      switch (T4.type.value()){
         case 0: lcd.print("(SR)");break;
         case 1: lcd.print("(CL)");break;
         case 2: lcd.print("(SS)");break;
       }
+      #endif
       break;
    }
   }
 }
 
 void temperaturesDisplay(){
-  printHeader("TIMEPOINTS - TEMP",4);
+
+  if(greenhouse.weather() == SUN){
+    printHeader("TIMEP - TEMP(SUN)",TIMEPOINTS);
+  }
+  else if(greenhouse.weather() == CLOUD){
+    printHeader("TIMEP - TEMP(CLOUD)",TIMEPOINTS);
+  }
+  if(firstPrint == true){
+    firstPrint = false;
+  }
+
   adjustLine();
 
   //print content
-  for(int x = 1; x < 4; x++){
+  int maxLines = TIMEPOINTS+1;
+  if(maxLines > 4){
+    maxLines = 4;
+  }
+  for(int x = 1; x < maxLines; x++){
     int writeLine = x+line;
     if (writeLine > maxLine){
       writeLine = maxLine;
     }
-    switch(writeLine){
-      case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcd.print(T1.heatingTemp());lcd.print(F("-")); lcd.print(T1.coolingTemp());lcd.print(F(" R")); lcd.print(T1.ramping());break;
-      case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTemp());lcd.print(F("-")); lcd.print(T2.coolingTemp());lcd.print(F(" R")); lcd.print(T2.ramping());break;
-      case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTemp());lcd.print(F("-")); lcd.print(T3.coolingTemp());lcd.print(F(" R")); lcd.print(T3.ramping());break;
-      case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTemp());lcd.print(F("-")); lcd.print(T4.coolingTemp());lcd.print(F(" R")); lcd.print(T4.ramping());break; }
+    if(greenhouse.weather() == SUN){
+      switch(writeLine){
+        #if TIMEPOINTS >= 1
+          case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcd.print(T1.heatingTemp.value());lcd.print(F("-")); lcd.print(T1.coolingTemp.value());lcd.print(F(" R")); lcd.print(T1.ramping.value());break;
+        #endif
+        #if TIMEPOINTS >= 2
+          case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTemp.value());lcd.print(F("-")); lcd.print(T2.coolingTemp.value());lcd.print(F(" R")); lcd.print(T2.ramping.value());break;
+        #endif
+        #if TIMEPOINTS >= 3
+          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTemp.value());lcd.print(F("-")); lcd.print(T3.coolingTemp.value());lcd.print(F(" R")); lcd.print(T3.ramping.value());break;
+        #endif
+        #if TIMEPOINTS == 4
+          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());lcd.print(F(" R")); lcd.print(T4.ramping.value());break;
+        #endif
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      switch(writeLine){
+        #if TIMEPOINTS >= 1
+          case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcd.print(T1.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T1.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T1.ramping.value());break;
+        #endif
+        #if TIMEPOINTS >= 2
+          case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T2.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T2.ramping.value());break;
+        #endif
+        #if TIMEPOINTS >= 3
+          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T3.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T3.ramping.value());break;
+        #endif
+        #if TIMEPOINTS == 4
+          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T4.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T4.ramping.value());break;
+        #endif
+      }
+    }
   }
 }
 void geoDisplay(){
@@ -555,6 +667,99 @@ void menuDisplay(){
   }
 
 }
+
+void select(){
+
+  lcd.setCursor(0,2);
+  lcd.print("YES");
+  lcd.setCursor(0,3);
+  lcd.print("NO");
+
+  if(line > 1){
+    line = 0;
+  }
+  if(line < 0){
+    line = 1;
+  }
+  if(line == 0){
+    lcd.setCursor(5, 3);
+    lcd.blink();
+    confirm = false;
+  }
+  if(line == 1){
+    lcd.setCursor(5, 2);
+    lcd.blink();
+    confirm = true;
+  }
+}
+
+void menuAction(){
+    if(keyPressed == 'C'){
+      lcd.clear();
+      lcd.print("---SELECT ACTION----");
+    }
+    if(keyPressed == '1'){
+      action = 1;
+      lcd.clear();
+      if(greenhouse.weather() == SUN){
+        lcd.print("CLOUDY DAY?");
+      }
+      if(greenhouse.weather() == CLOUD){
+        lcd.print("SUNNY DAY?");
+      }
+    }
+    if(keyPressed == '2'){
+      action = 2;
+      lcd.clear();
+      lcd.print("FULL VENTILATION?");
+    }
+    if(keyPressed == '3'){
+      action = 3;
+      lcd.clear();
+      if (deshum == true){
+        lcd.print("DISABLE DESHUM?");
+      }
+      else if(deshum == false){
+        lcd.print("ENABLE DESHUM?");
+      }
+    }
+    if(action != 0){
+      select();
+    }
+    if(keyPressed == 'D'){
+      lcd.noBlink();
+      switch(action){
+        case 1:
+          if(confirm == true){
+            if(greenhouse.weather() == SUN){
+              greenhouse.setWeather(CLOUD);
+            }
+            else if(greenhouse.weather() == CLOUD){
+              greenhouse.setWeather(SUN);
+            }
+          }
+        break;
+        case 2:
+          if(confirm == true){
+              fullVentOverride = true;
+            }
+        break;
+        case 3:
+          if(confirm == true){
+            if(deshum == true){
+              deshum = false;
+            }
+            else if (deshum == false){
+              deshum = true;
+            }
+          }
+        break;
+      }
+      menu = MODE_DISPLAY;action = 0;key = '1';firstPrint = true; unpressedTimer = 0; line = 0;
+    }
+  }
+
+
 void menuProgram(){
 
     if(firstPrint == true){
@@ -745,8 +950,9 @@ void menuSetParameter(){
         hourSet = usvariable;
       }
       else{
+        hourSet = usvariable;
         if(hourSet > 0){
-          hourSet = usvariable-1;
+          hourSet -= 1;
         }
         else{
           hourSet = 23;
@@ -772,110 +978,110 @@ void menuSetParameter(){
   //Rollup 1
 #if ROLLUPS >= 1
   else if(!strcmp(Data, R1HYST)){
-    confirmVariable("R1 - HYSTERESIS",R1.hystMin(),R1.hyst(),R1.hystMax());
+    confirmVariable("R1 - HYSTERESIS",R1.hyst.minimum(),R1.hyst.value(),R1.hyst.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setHyst(fvariable);
+      R1.hyst.setValue(fvariable);
       menu = MODE_DISPLAY;key = '2';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R1ROTUP)){
-    confirmVariable(" R1 - ROTATION (UP)",R1.rotationUpMin(),R1.rotationUp(),R1.rotationUpMax());
+    confirmVariable(" R1 - ROTATION (UP)",R1.rotationUp.minimum(),R1.rotationUp.value(),R1.rotationUp.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setRotationUp(usvariable);
+      R1.rotationUp.setValue(usvariable);
       menu = MODE_DISPLAY;key = '2';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R1ROTDOWN)){
-    confirmVariable("R1 - ROTATION (DOWN)",R1.rotationDownMin(),R1.rotationDown(),R1.rotationDownMax());
+    confirmVariable("R1 - ROTATION (DOWN)",R1.rotationDown.minimum(),R1.rotationDown.value(),R1.rotationDown.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setRotationDown(usvariable);
+      R1.rotationDown.setValue(usvariable);
       menu = MODE_DISPLAY;key = '2';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R1PAUSE)){
-    confirmVariable("  R1 - PAUSE TIME",R1.pauseMin(),R1.pause(),R1.pauseMax());
-    if((keyPressed == 'D')&&(R1.pause()!= usvariable)){
-      R1.setPause(usvariable);
+    confirmVariable("  R1 - PAUSE TIME",R1.pause.minimum(),R1.pause.value(),R1.pause.maximum());
+    if((keyPressed == 'D')&&(R1.pause.value()!= usvariable)){
+      R1.pause.setValue(usvariable);
       menu = MODE_DISPLAY;key = '2';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS >= 1 && STAGES >= 1
   else if(!strcmp(Data, R1S1MOD)){
-    confirmVariable("  R1 - STAGE 1 MOD",R1.stageModMin(1),R1.stageMod(1),R1.stageModMax(1));
+    confirmVariable("  R1 - STAGE 1 MOD",R1.stage[1].mod.minimum(),R1.stage[1].mod.minimum(),R1.stage[1].mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setStageMod(1,fvariable);
+      R1.stage[1].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R1S1TARG)){
-    confirmVariable("R1 - STAGE 1 TARGET",R1.stageTargetMin(1),R1.stageTarget(1),R1.stageTargetMax(1));
+    confirmVariable("R1 - STAGE 1 TARGET",R1.stage[1].target.minimum(),R1.stage[1].target.value(),R1.stage[1].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setStageTarget(1,usvariable);
+      R1.stage[1].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS >= 1 && STAGES >= 2
   else if(!strcmp(Data, R1S2MOD)){
-    confirmVariable("  R1 - STAGE 2 MOD",R1.stageModMin(2),R1.stageMod(2),R1.stageModMax(2));
+    confirmVariable("  R1 - STAGE 2 MOD",R1.stage[2].mod.minimum(),R1.stage[2].mod.value(),R1.stage[2].mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setStageMod(2,fvariable);
+      R1.stage[2].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R1S2TARG)){
-    confirmVariable("R1 - STAGE 2 TARGET",R1.stageTargetMin(2),R1.stageTarget(2),R1.stageTargetMax(2));
+    confirmVariable("R1 - STAGE 2 TARGET",R1.stage[2].target.minimum(),R1.stage[2].target.value(),R1.stage[2].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setStageTarget(2,usvariable);
+      R1.stage[2].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS >= 1 && STAGES >= 3
   else if(!strcmp(Data, R1S3MOD)){
-    confirmVariable("  R1 - STAGE 3 MOD",R1.stageModMin(3),R1.stageMod(3),R1.stageModMax(3));
-    if((keyPressed == 'D')&&(R1.stageMod(3)!= fvariable)){
-      R1.setStageMod(3, fvariable);
+    confirmVariable("  R1 - STAGE 3 MOD",R1.stage[3].mod.minimum(),R1.stage[3].mod.value(),R1.stage[3].mod.maximum());
+    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+      R1.stage[3].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R1S3TARG)){
-    confirmVariable("R1 - STAGE 3 TARGET",R1.stageTargetMin(3),R1.stageTarget(3),R1.stageTargetMax(3));
+    confirmVariable("R1 - STAGE 3 TARGET",R1.stage[3].target.minimum(),R1.stage[3].target.value(),R1.stage[3].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setStageTarget(3, usvariable);
+      R1.stage[3].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS >= 1 && STAGES >= 4
   else if(!strcmp(Data, R1S4MOD)){
-    confirmVariable("  R1 - STAGE 4 MOD",R1.stageModMin(4),R1.stageMod(4),R1.stageModMax(4));
+    confirmVariable("  R1 - STAGE 4 MOD",R1.stage[4].mod.minimum(),R1.stage[4].mod.value(),R1.stage[4].mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setStageMod(4, fvariable);
+      R1.stage[4].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R1S4TARG)){
-    confirmVariable("R1 - STAGE 4 TARGET",R1.stageTargetMin(4),R1.stageTarget(4),R1.stageTargetMax(4));
+    confirmVariable("R1 - STAGE 4 TARGET",R1.stage[4].target.minimum(),R1.stage[4].target.value(),R1.stage[4].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setStageTarget(4, usvariable);
+      R1.stage[4].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS >= 1 && STAGES >= 5
   else if(!strcmp(Data, R1S5MOD)){
-    confirmVariable("  R1 - STAGE 5 MOD",R1.stageModMin(5),R1.stageMod(5),R1.stageModMax(5));
+    confirmVariable("  R1 - STAGE 5 MOD",R1.stage[5].mod.minimum(),R1.stage[5].mod.value(),R1.stage[5].mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setStageMod(5, fvariable);
+      R1.stage[5].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R1S5TARG)){
-    confirmVariable("R1 - STAGE 5 TARGET",R1.stageTargetMin(5),R1.stageTarget(5),R1.stageTargetMax(5));
+    confirmVariable("R1 - STAGE 5 TARGET",R1.stage[5].target.minimum(),R1.stage[5].target(),R1.stage[5].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R1.setStageTarget(5, usvariable);
+      R1.stage[5].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '5';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
@@ -883,174 +1089,174 @@ void menuSetParameter(){
 #if ROLLUPS == 2
   //Rollup 2
   else if(!strcmp(Data, R2HYST)){
-    confirmVariable("  R2 - HYSTERESIS",R2.hystMin(),R2.hyst(),R2.hystMax());
+    confirmVariable("  R2 - HYSTERESIS",R2.hyst.minimum(),R2.hyst.value(),R2.hyst.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setHyst(fvariable);
+      R2.hyst.setValue(fvariable);
       menu = MODE_DISPLAY;key = '3';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R2ROTUP)){
-    confirmVariable(" R2 - ROTATION (UP)",R2.rotationUpMin(),R2.rotationUp(),R2.rotationUpMax());
+    confirmVariable(" R2 - ROTATION (UP)",R2.rotationUp.minimum(),R2.rotationUp.value(),R2.rotationUp.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setRotationUp(usvariable);
+      R2.rotationUp.setValue(usvariable);
       menu = MODE_DISPLAY;key = '3';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R2ROTDOWN)){
-    confirmVariable("R2 - ROTATION (DOWN)",R2.rotationDownMin(),R2.rotationDown(),R2.rotationDownMax());
+    confirmVariable("R2 - ROTATION (DOWN)",R2.rotationDown.minimum(),R2.rotationDown.value(),R2.rotationDown.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setRotationDown(usvariable);
+      R2.rotationDown.setValue(usvariable);
       menu = MODE_DISPLAY;key = '3';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R2PAUSE)){
-    confirmVariable("  R2 - PAUSE TIME",R2.pauseMin(),R2.pause(),R2.pauseMax());
+    confirmVariable("  R2 - PAUSE TIME",R2.pause.minimum(),R2.pause.value(),R2.pause.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setPause(usvariable);
+      R2.pause.setValue(usvariable);
       menu = MODE_DISPLAY;key = '3';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS == 2 && STAGES >= 1
   else if(!strcmp(Data, R2S1MOD)){
-    confirmVariable("  R2 - STAGE 1 MOD",R2.stageModMin(1),R2.stageMod(1),R2.stageModMax(1));
+    confirmVariable("  R2 - STAGE 1 MOD",R2.stage[1].mod.minimum(),R2.stage[1].mod.minimum(),R2.stage[1].mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageMod(1,fvariable);
+      R2.stage[1].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R2S1TARG)){
-    confirmVariable("R2 - STAGE 1 TARGET",R2.stageTargetMin(1),R2.stageTarget(1),R2.stageTargetMax(1));
+    confirmVariable("R2 - STAGE 1 TARGET",R2.stage[1].target.minimum(),R2.stage[1].target.value(),R2.stage[1].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageTarget(1,usvariable);
+      R2.stage[1].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS == 2 && STAGES >= 2
   else if(!strcmp(Data, R2S2MOD)){
-    confirmVariable("  R2 - STAGE 2 MOD",R2.stageModMin(2),R2.stageMod(2),R2.stageModMax(2));
+    confirmVariable("  R2 - STAGE 2 MOD",R2.stage[2].mod.minimum(),R2.stage[2].mod.value(),R2.stage[2].mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageMod(2,fvariable);
+      R2.stage[2].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R2S2TARG)){
-    confirmVariable("R2 - STAGE 2 TARGET",R2.stageTargetMin(2),R2.stageTarget(2),R2.stageTargetMax(2));
+    confirmVariable("R2 - STAGE 2 TARGET",R2.stage[2].target.minimum(),R2.stage[2].target.value(),R2.stage[2].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageTarget(2,usvariable);
+      R2.stage[2].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS == 2 && STAGES >= 3
   else if(!strcmp(Data, R2S3MOD)){
-    confirmVariable("  R2 - STAGE 3 MOD",R2.stageModMin(3),R2.stageMod(3),R2.stageModMax(3));
+    confirmVariable("  R2 - STAGE 3 MOD",R2.stage[3].mod.minimum(),R2.stage[3].mod.value(),R2.stage[3].mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageMod(3, fvariable);
+      R2.stage[3].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R2S3TARG)){
-    confirmVariable("R2 - STAGE 3 TARGET",R2.stageTargetMin(3),R2.stageTarget(3),R2.stageTargetMax(3));
+    confirmVariable("R2 - STAGE 3 TARGET",R2.stage[3].target.minimum(),R2.stage[3].target.value(),R2.stage[3].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageTarget(3, usvariable);
+      R2.stage[3].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS == 2 && STAGES >= 4
   else if(!strcmp(Data, R2S4MOD)){
-    confirmVariable("  R2 - STAGE 4 MOD",R2.stageModMin(4),R2.stageMod(4),R2.stageModMax(4));
+    confirmVariable("  R2 - STAGE 4 MOD",R2.stage[4].mod.minimum(),R2.stage[4].mod.value(),R2.stage[4].mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageMod(4, fvariable);
+      R2.stage[4].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R2S4TARG)){
-    confirmVariable("R2 - STAGE 4 TARGET",R2.stageTargetMin(4),R2.stageTarget(4),R2.stageTargetMax(4));
+    confirmVariable("R2 - STAGE 4 TARGET",R2.stage[4].target.minimum(),R2.stage[4].target.value(),R2.stage[4].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageTarget(4, usvariable);
+      R2.stage[4].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if ROLLUPS == 2 && STAGES >= 5
   else if(!strcmp(Data, R2S5MOD)){
-    confirmVariable("  R2 - STAGE 5 MOD",R2.stageModMin(5),R2.stageMod(5),R2.stageModMax(5));
+    confirmVariable("  R2 - STAGE 5 MOD",R2.stage[5].mod.minimum(),R2.stage[5].mod.value(),R2.stage[5].mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageMod(5, fvariable);
+      R2.stage[5].mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, R2S5TARG)){
-    confirmVariable("R2 - STAGE 5 TARGET",R2.stageTargetMin(5),R2.stageTarget(5),R2.stageTargetMax(5));
+    confirmVariable("R2 - STAGE 5 TARGET",R2.stage[5].target.minimum(),R2.stage[5].target.value(),R2.stage[5].target.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      R2.setStageTarget(5, usvariable);
+      R2.stage[5].target.setValue(usvariable);
       menu = MODE_DISPLAY;key = '6';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if FANS >= 1
   else if(!strcmp(Data, F1HYST)){
-    confirmVariable("  F1 - HYSTERESIS", F1.hystMin(), F1.hyst(), F1.hystMax());
+    confirmVariable("  F1 - HYSTERESIS", F1.hyst.minimum(), F1.hyst.value(), F1.hyst.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      F1.setHyst(fvariable);
+      F1.hyst.setValue(fvariable);
       menu = MODE_DISPLAY;key = '4';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, F1MOD)){
-    confirmVariable(" F1 - MODIFICATEUR", F1.modMin(), F1.mod(), F1.modMax());
+    confirmVariable(" F1 - MODIFICATEUR", F1.mod.minimum(), F1.mod.value(), F1.mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      F1.setMod(fvariable);
+      F1.mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '4';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if FANS == 2
   else if(!strcmp(Data, F2HYST)){
-    confirmVariable("  F2 - HYSTERESIS", F2.hystMin(), F2.hyst(), F2.hystMax());
+    confirmVariable("  F2 - HYSTERESIS", F2.hyst.minimum(), F2.hyst.value(), F2.hyst.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      F2.setHyst(fvariable);
+      F2.hyst.setValue(fvariable);
       menu = MODE_DISPLAY;key = '7';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, F2MOD)){
-    confirmVariable(" F2 - MODIFICATEUR", F2.modMin(), F2.mod(), F2.modMax());
+    confirmVariable(" F2 - MODIFICATEUR", F2.mod.minimum(), F2.mod.value(), F2.mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      F2.setMod(fvariable);
+      F2.mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '7';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if HEATERS >= 1 && FANS == 0
   else if(!strcmp(Data, H1HYST)){
-    confirmVariable("  H1 - HYSTERESIS", H1.hystMin(), H1.hyst(), H1.hystMax());
+    confirmVariable("  H1 - HYSTERESIS", H1.hyst.minimum(), H1.hyst.value(), H1.hyst.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      H1.setHyst(fvariable);
+      H1.hyst.setValue(fvariable);
       menu = MODE_DISPLAY;key = '4';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, H1MOD)){
-    confirmVariable(" H1 - MODIFICATEUR", H1.modMin(), H1.mod(), H1.modMax());
+    confirmVariable(" H1 - MODIFICATEUR", H1.mod.minimum(), H1.mod.value(), H1.mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      H1.setMod(fvariable);
+      H1.mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '4';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if HEATERS >= 1 && FANS == 1
   else if(!strcmp(Data, H1HYST)){
-    confirmVariable("  H1 - HYSTERESIS", H1.hystMin(), H1.hyst(), H1.hystMax());
+    confirmVariable("  H1 - HYSTERESIS", H1.hyst.minimum(), H1.hyst.value(), H1.hyst.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      H1.setHyst(fvariable);
+      H1.hyst.setValue(fvariable);
       menu = MODE_DISPLAY;key = '7';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, H1MOD)){
-    confirmVariable(" H1 - MODIFICATEUR", H1.modMin(), H1.mod(), H1.modMax());
+    confirmVariable(" H1 - MODIFICATEUR", H1.mod.minimum(), H1.mod.value(), H1.mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      H1.setMod(fvariable);
+      H1.mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '7';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
@@ -1059,23 +1265,23 @@ void menuSetParameter(){
 
 #if HEATERS == 2
   else if(!strcmp(Data, H2HYST)){
-    confirmVariable("  H2 - HYSTERESIS", H2.hystMin(), H2.hyst(), H2.hystMax());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000))){
-      H2.setHyst(fvariable);
+    confirmVariable("  H2 - HYSTERESIS", H2.hyst.minimum(), H2.hyst.value(), H2.hyst.maximum());
+    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+      H2.hyst.setValue(fvariable);
       menu = MODE_DISPLAY;key = '7';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, H2MOD)){
-    confirmVariable(" H2 - MODIFICATEUR", H2.modMin(), H2.mod(), H2.modMax());
+    confirmVariable(" H2 - MODIFICATEUR", H2.mod.minimum(), H2.mod.value(), H2.mod.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      H2.setMod(fvariable);
+      H2.mod.setValue(fvariable);
       menu = MODE_DISPLAY;key = '7';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if TIMEPOINTS >= 1
   else if(!strcmp(Data, T1TYPE)){
-    confirmType("     T1 - TYPE",T1.type());
+    confirmType("     T1 - TYPE",T1.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
         Data[x] = T1HOUR[x];
@@ -1086,10 +1292,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T1HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T1 - HOUR", 0,T1.hrMod(),23);
+      confirmVariable("     T1 - HOUR", 0,T1.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T1 - HOUR", -23,T1.hrMod(),23);
+      confirmVariable("     T1 - HOUR", -23,T1.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
@@ -1102,42 +1308,61 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T1MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T1 - MINUTS", 0,T1.mnMod(),59);
+      confirmVariable("    T1 - MINUTS", 0,T1.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T1 - MINUTS", -59,T1.mnMod(),59);
+      confirmVariable("    T1 - MINUTS", -59,T1.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
-      T1.setTime(typeSet, hourSet, minSet);
+      T1.type.setValue(typeSet);
+      T1.setTimepoint(hourSet, minSet);
       menu = MODE_DISPLAY;key = '8';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, T1HEATT)){
-    confirmVariable("  T1 - HEAT TEMP", T1.heatingTempMin(),T1.heatingTemp(),T1.heatingTempMax());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T1.setHeatTemp(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+    if(greenhouse.weather() == SUN){
+      confirmVariable("T1 - HEAT TEMP-SUN", T1.coolingTemp.minimum(),T1.heatingTemp.value(),T1.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T1.heatingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("T1 - HEAT TEMP-CLOUD", T1.coolingTemp.minimum(),T1.heatingTempCloud.value(),T1.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T1.heatingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
   else if(!strcmp(Data, T1COOLT)){
-    confirmVariable("  T1 - COOL TEMP", T1.coolingTempMin(),T1.coolingTemp(),T1.coolingTempMax());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T1.setCoolTemp(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+    if(greenhouse.weather() == SUN){
+      confirmVariable("T1 - COOL TEMP-SUN", T1.coolingTemp.minimum(),T1.coolingTemp.value(),T1.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T1.coolingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("T1 - COOL TEMP-CLOUD", T1.coolingTemp.minimum(),T1.coolingTempCloud.value(),T1.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T1.coolingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
   else if(!strcmp(Data, T1RAMP)){
-    confirmVariable("   T1 - RAMPING", T1.rampingMin(),T1.ramping(),T1.rampingMax());
+    confirmVariable("   T1 - RAMPING", T1.ramping.minimum(),T1.ramping.value(),T1.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T1.setRamping(usvariable);
+      T1.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if TIMEPOINTS >= 2
   else if(!strcmp(Data, T2TYPE)){
-    confirmType("     T2 - TYPE",T2.type());
+    confirmType("     T2 - TYPE",T2.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
         Data[x] = T2HOUR[x];
@@ -1148,10 +1373,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T2HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T2 - HOUR", 0,T2.hrMod(),23);
+      confirmVariable("     T2 - HOUR", 0,T2.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T2 - HOUR", -23,T2.hrMod(),23);
+      confirmVariable("     T2 - HOUR", -23,T2.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
@@ -1164,42 +1389,61 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T2MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T2 - MINUTS", 0,T2.mnMod(),59);
+      confirmVariable("    T2 - MINUTS", 0,T2.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T2 - MINUTS", -59,T2.mnMod(),59);
+      confirmVariable("    T2 - MINUTS", -59,T2.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
-      T2.setTime(typeSet, hourSet, minSet);
+      T2.type.setValue(typeSet);
+      T2.setTimepoint(hourSet, minSet);
       menu = MODE_DISPLAY;key = '8';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, T2HEATT)){
-    confirmVariable("  T2 - HEAT TEMP", T2.heatingTempMin(),T2.heatingTemp(),T2.heatingTempMax());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T2.setHeatTemp(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+    if(greenhouse.weather() == SUN){
+      confirmVariable("T2 - HEAT TEMP-SUN", T2.coolingTemp.minimum(),T2.heatingTemp.value(),T2.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T2.heatingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("T2 - HEAT TEMP-CLOUD", T2.coolingTemp.minimum(),T2.heatingTempCloud.value(),T2.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T2.heatingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
   else if(!strcmp(Data, T2COOLT)){
-    confirmVariable("  T2 - COOL TEMP", T2.coolingTempMin(),T2.coolingTemp(),T2.coolingTempMax());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T2.setCoolTemp(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+    if(greenhouse.weather() == SUN){
+      confirmVariable("T2 - COOL TEMP-SUN", T2.coolingTemp.minimum(),T2.coolingTemp.value(),T2.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T2.coolingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("T2 - COOL TEMP-CLOUD", T2.coolingTemp.minimum(),T2.coolingTempCloud.value(),T2.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T2.coolingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
   else if(!strcmp(Data, T2RAMP)){
-    confirmVariable("   T2 - RAMPING", T2.rampingMin(),T2.ramping(),T2.rampingMax());
+    confirmVariable("   T2 - RAMPING", T2.ramping.minimum(),T2.ramping.value(),T2.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T2.setRamping(usvariable);
+      T2.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if TIMEPOINTS >= 3
   else if(!strcmp(Data, T3TYPE)){
-    confirmType("     T3 - TYPE",T3.type());
+    confirmType("     T3 - TYPE",T3.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
         Data[x] = T3HOUR[x];
@@ -1210,10 +1454,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T3HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T3 - HOUR", 0,T3.hrMod(),23);
+      confirmVariable("     T3 - HOUR", 0,T3.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T3 - HOUR", -23,T3.hrMod(),23);
+      confirmVariable("     T3 - HOUR", -23,T3.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
@@ -1226,42 +1470,61 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T3MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T3 - MINUTS", 0,T3.mnMod(),59);
+      confirmVariable("    T3 - MINUTS", 0,T3.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T3 - MINUTS", -59,T3.mnMod(),59);
+      confirmVariable("    T3 - MINUTS", -59,T3.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
-      T3.setTime(typeSet, hourSet, minSet);
+      T3.type.setValue(typeSet);
+      T3.setTimepoint(hourSet, minSet);
       menu = MODE_DISPLAY;key = '8';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, T3HEATT)){
-    confirmVariable("  T3 - HEAT TEMP", T3.heatingTempMin(),T3.heatingTemp(),T3.heatingTempMax());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T3.setHeatTemp(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+    if(greenhouse.weather() == SUN){
+      confirmVariable("T3 - HEAT TEMP-SUN", T3.coolingTemp.minimum(),T3.heatingTemp.value(),T3.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.heatingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("T3 - HEAT TEMP-CLOUD", T3.coolingTemp.minimum(),T3.heatingTempCloud.value(),T3.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.heatingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
   else if(!strcmp(Data, T3COOLT)){
-    confirmVariable("  T3 - COOL TEMP", T3.coolingTempMin(),T3.coolingTemp(),T3.coolingTempMax());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T3.setCoolTemp(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+    if(greenhouse.weather() == SUN){
+      confirmVariable("T3 - COOL TEMP-SUN", T3.coolingTemp.minimum(),T3.coolingTemp.value(),T3.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.coolingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("T3 - COOL TEMP-CLOUD", T3.coolingTemp.minimum(),T3.coolingTempCloud.value(),T3.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.coolingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
   else if(!strcmp(Data, T3RAMP)){
-    confirmVariable("   T3 - RAMPING", T3.rampingMin(),T3.ramping(),T3.rampingMax());
+    confirmVariable("   T3 - RAMPING", T3.ramping.minimum(),T3.ramping.value(),T3.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T3.setRamping(usvariable);
+      T3.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if TIMEPOINTS >= 4
   else if(!strcmp(Data, T4TYPE)){
-    confirmType("     T4 - TYPE",T4.type());
+    confirmType("     T4 - TYPE",T4.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
         Data[x] = T4HOUR[x];
@@ -1272,10 +1535,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T4HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T4 - HOUR", 0,T4.hrMod(),23);
+      confirmVariable("     T4 - HOUR", 0,T4.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T4 - HOUR", -23,T4.hrMod(),23);
+      confirmVariable("     T4 - HOUR", -23,T4.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
@@ -1288,42 +1551,61 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T4MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T4 - MINUTS", 0,T4.mnMod(),59);
+      confirmVariable("    T4 - MINUTS", 0,T4.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T4 - MINUTS", -59,T4.mnMod(),59);
+      confirmVariable("    T4 - MINUTS", -59,T4.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
-      T4.setTime(typeSet, hourSet, minSet);
+      T4.type.setValue(typeSet);
+      T4.setTimepoint(hourSet, minSet);
       menu = MODE_DISPLAY;key = '8';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
-  else if(!strcmp(Data, T4HEATT)){
-    confirmVariable("  T4 - HEAT TEMP", T4.heatingTempMin(),T4.heatingTemp(),T4.heatingTempMax());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T4.setHeatTemp(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+  else if(!strcmp(Data, T3HEATT)){
+    if(greenhouse.weather() == SUN){
+      confirmVariable("T3 - HEAT TEMP-SUN", T3.coolingTemp.minimum(),T3.heatingTemp.value(),T3.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.heatingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("T3 - HEAT TEMP-CLOUD", T3.coolingTemp.minimum(),T3.heatingTempCloud.value(),T3.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.heatingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
-  else if(!strcmp(Data, T4COOLT)){
-    confirmVariable("  T4 - COOL TEMP", T4.coolingTempMin(),T4.coolingTemp(),T4.coolingTempMax());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T4.setCoolTemp(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+  else if(!strcmp(Data, T3COOLT)){
+    if(greenhouse.weather() == SUN){
+      confirmVariable("T3 - COOL TEMP-SUN", T3.coolingTemp.minimum(),T3.coolingTemp.value(),T3.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.coolingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("T3 - COOL TEMP-CLOUD", T3.coolingTemp.minimum(),T3.coolingTempCloud.value(),T3.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.coolingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
   else if(!strcmp(Data, T4RAMP)){
-    confirmVariable("   T4 - RAMPING", T4.rampingMin(),T4.ramping(),T4.rampingMax());
+    confirmVariable("   T4 - RAMPING", T4.ramping.minimum(),T4.ramping.value(),T4.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T4.setRamping(usvariable);
+      T4.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
 #if TIMEPOINTS >= 5
   else if(!strcmp(Data, T5TYPE)){
-    confirmType("     T5 - TYPE",T5.type());
+    confirmType("     T5 - TYPE",T5.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
         Data[x] = T5HOUR[x];
@@ -1337,10 +1619,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T5HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T5 - HOUR", 0,T5.hrMod(),23);
+      confirmVariable("     T5 - HOUR", 0,T5.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T5 - HOUR", -23,T5.hrMod(),23);
+      confirmVariable("     T5 - HOUR", -23,T5.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
@@ -1353,35 +1635,36 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T5MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T5 - MINUTS", 0,T5.mnMod(),59);
+      confirmVariable("    T5 - MINUTS", 0,T5.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T5 - MINUTS", -59,T5.mnMod(),59);
+      confirmVariable("    T5 - MINUTS", -59,T5.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
-      T5.setTime(typeSet, hourSet, minSet);
+      T5.type.setValue(typeSet);
+      T5.setTimepoint(hourSet, minSet);
       menu = MODE_DISPLAY;key = '8';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, T5HEATT)){
-    confirmVariable("  T5 - HEAT TEMP", T5.heatingTempMin(),T5.heatingTemp(),T5.heatingTempMax());
+    confirmVariable("  T5 - HEAT TEMP", T5.coolingTemp.minimum(),T5.heatingTemp.value(),T5.coolingTemp.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T5.setHeatTemp(fvariable);
+      T5.heatingTemp.setValue(fvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, T5COOLT)){
-    confirmVariable("  T5 - COOL TEMP", T5.coolingTempMin(),T5.coolingTemp(),T5.coolingTempMax());
+    confirmVariable("  T5 - COOL TEMP", T5.coolingTemp.minimum(),T5.coolingTemp.value(),T5.coolingTemp.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T5.setCoolTemp(fvariable);
+      T5.coolingTemp.setValue(fvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
   else if(!strcmp(Data, T5RAMP)){
-    confirmVariable("   T5 - RAMPING", T5.rampingMin(),T5.ramping(),T5.rampingMax());
+    confirmVariable("   T5 - RAMPING", T5.ramping.minimum(),T5.ramping.value(),T5.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T5.setRamping(usvariable);
+      T5.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
@@ -1420,7 +1703,7 @@ void lcdDisplay(){
       case '#' : line++;break;
       case 'A' : menu = MODE_DISPLAY;firstPrint = true; line = 0; key = '1'; lcd.noBlink(); clearData(); homeDisplay();break;
       case 'B' : menu = MODE_PROGRAM;firstPrint = true; line = 0; lcd.noBlink();clearData();data_count = 0; break;
-      case 'C' : break;
+      case 'C' : menu = MODE_ACTION;firstPrint = true; action = 0; line = 0;lcd.noBlink();clearData();data_count = 0;break;
     }
     if(keyPressed != NO_KEY && keyPressed != 'D'){
       unpressedTimer = 0;
@@ -1430,6 +1713,7 @@ void lcdDisplay(){
       menuDisplay();
       if(unpressedTimer > 15000){
         key = '1';firstPrint = true;
+        unpressedTimer = 0;
       }
     }
 
@@ -1456,12 +1740,12 @@ void lcdDisplay(){
       }
     }
 
-    if(menu == ACTION){
+    if(menu == MODE_ACTION){
+      menuAction();
       if(unpressedTimer > 15000){
         menu = MODE_DISPLAY;
         key = '1';firstPrint = true;
       }
-
     }
 
   #endif

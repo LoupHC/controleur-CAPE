@@ -70,6 +70,8 @@ Greenhouse greenhouse(TIMEZONE, LATITUDE, LONGITUDE, TIMEPOINTS, ROLLUPS, STAGES
 #endif
 #if FANS >= 1
   Fan &F1 = greenhouse.fan[0];
+#endif
+#if FANS == 2
   Fan &F2 = greenhouse.fan[1];
 #endif
 #if HEATERS >= 1
@@ -102,18 +104,21 @@ byte rightNowValue[6];
 //Temperature inside the greenhouse
 floatParameter greenhouseTemperature;
 floatParameter greenhouseHumidity;
-byte printx = 0;
-boolean manualOverride = false;
+float coolingTemperature;
+float heatingTemperature;
+//flags
 boolean sensorFailure = false;
 boolean EEPROMReset = false;
+
 //********************SENSORS**************************
 //See "Greenhouse_sensors.h" for sensor functions
 #include "Greenhouse_sensors.h"
-
+//********************INTERFACE**************************
+//See "Greenhouse_overrides.h" for overrides functions
+#include "Greenhouse_overrides.h"
 //********************INTERFACE**************************
 //See "Greenhouse_interface.h" for LCD display functions
 #include "Greenhouse_interface.h"
-
 //********************ERRORS**************************
 #include "Preprocessor_error_codes.h"
 
@@ -162,7 +167,7 @@ void setup() {
   //get sensors values
   getDateAndTime();
   getGreenhouseTemp();
-
+  delay(1000);
   //set time within greenhouse object
   greenhouse.setNow(rightNowValue);
 
@@ -184,7 +189,6 @@ void setup() {
 //***************************************************
 
 void loop() {
-
   //actual time
   getDateAndTime();
   //actual temperature
@@ -194,8 +198,59 @@ void loop() {
   //diplay infos on LCD screen
   lcdDisplay();
   //timepoint and target temperatures definitions, outputs routine
-  greenhouse.fullRoutine(rightNowValue, greenhouseTemperature.value());
+  greenhouse.fullRoutine(rightNowValue, &coolingTemperature, &heatingTemperature);
+  #if ROLLUPS >= 1 && defined(ROLLUP1_DESHUM)
+    R1.routine(rollup1Deshum, coolingTemperature, greenhouseTemperature.value());
+  #elif ROLLUPS >= 1 && !defined(ROLLUP1_DESHUM)
+    R1.routine(coolingTemperature, greenhouseTemperature.value());
+  #endif
+
+  #if ROLLUPS == 2 && defined(ROLLUP1_DESHUM)
+    R2.routine(rollup2Deshum, coolingTemperature, greenhouseTemperature.value());
+  #elif ROLLUPS == 2 && !defined(ROLLUP1_DESHUM)
+    R2.routine(coolingTemperature, greenhouseTemperature.value());
+  #endif
+
+  #if FANS >= 1 && defined(FAN1_DESHUM)
+    F1.routine(fan1Deshum, coolingTemperature, greenhouseTemperature.value());
+  #elif FANS >= 1 && !defined(ROLLUP1_DESHUM)
+    F1.routine(coolingTemperature, greenhouseTemperature.value());
+
+  #endif
+  #if FANS == 2 && defined(FAN2_DESHUM)
+    F2.routine(fan2Deshum, coolingTemperature, greenhouseTemperature.value());
+  #elif FANS == 2 && !defined(ROLLUP1_DESHUM)
+    F2.routine(coolingTemperature, greenhouseTemperature.value());
+  #endif
+
+  #if HEATERS >= 1 && defined(HEATER1_DESHUM)
+    H1.routine(heater1Deshum, heatingTemperature, greenhouseTemperature.value());
+  #elif HEATERS >= 2 && !defined(ROLLUP1_DESHUM)
+    H1.routine(coolingTemperature, greenhouseTemperature.value());
+  #endif
+
+  #if HEATERS == 2
+    H2.routine(heatingTemperature, greenhouseTemperature.value());
+  #endif
+
+  #if defined(R1_RECALIBRATE) && ROLLUPS >= 1
+    recalibrateR1();
+  #endif
+  #if defined(R2_RECALIBRATE) && ROLLUPS == 2
+    recalibrateR2();
+  #endif
+  #ifdef FULL_VENTILATION
+    fullVentilation();
+  #endif
+  #if defined(ROLLUP1_DESHUM)||defined(ROLLUP2_DESHUM)||defined(FAN1_DESHUM)||defined(FAN2_DESHUM)||defined(HEATER1_DESHUM)
+    deshumCycle();
+  #endif
 }
+//***************************************************
+//*********************MACROS**************************
+//***************************************************
+
+
 
 void loadParameters(){
 
@@ -231,47 +286,74 @@ void loadParameters(){
     //If fresh start, set parameters from Greenhouse_parameters.h
     if(EEPROMReset == true){
     #if ROLLUPS >= 1
-      R1.setParameters(R1_HYST, R1_ROTUP, R1_ROTDOWN, 100, R1_PAUSE, true);
-      R1.setStageParameters(0,R1_S0_MOD, R1_S0_TARGET);
-      R1.setStageParameters(1,R1_S1_MOD, R1_S1_TARGET);
-      R1.setStageParameters(2,R1_S2_MOD, R1_S2_TARGET);
-      R1.setStageParameters(3,R1_S3_MOD, R1_S3_TARGET);
-      R1.setStageParameters(4,R1_S4_MOD, R1_S4_TARGET);
+      R1.setParameters(R1_HYST, R1_ROTUP, R1_ROTDOWN, R1_PAUSE);
     #endif
+    #if ROLLUPS >= 1 && STAGES >= 1
+      R1.stage[0].mod.setValue(R1_S0_MOD);
+      R1.stage[0].target.setValue(R1_S0_TARGET);
+      R1.stage[1].mod.setValue(R1_S1_MOD);
+      R1.stage[1].target.setValue(R1_S1_TARGET);
+    #endif
+    #if ROLLUPS >= 1 && STAGES >= 2
+      R1.stage[2].mod.setValue(R1_S2_MOD);
+      R1.stage[2].target.setValue(R1_S2_TARGET);
+    #endif
+    #if ROLLUPS >= 1 && STAGES >= 3
+      R1.stage[3].mod.setValue(R1_S3_MOD);
+      R1.stage[3].target.setValue(R1_S3_TARGET);
+    #endif
+    #if ROLLUPS >= 1 && STAGES >= 4
+      R1.stage[4].mod.setValue(R1_S4_MOD);
+      R1.stage[4].target.setValue(R1_S4_TARGET);
+    #endif
+
     #if ROLLUPS == 2
-      R2.setParameters(R2_HYST, R2_ROTUP, R2_ROTDOWN, 100, R2_PAUSE, true);
-      R2.setStageParameters(0,R2_S0_MOD, R2_S0_TARGET);
-      R2.setStageParameters(1,R2_S1_MOD, R2_S1_TARGET);
-      R2.setStageParameters(2,R2_S2_MOD, R2_S2_TARGET);
-      R2.setStageParameters(3,R2_S3_MOD, R2_S3_TARGET);
-      R2.setStageParameters(4,R2_S4_MOD, R2_S4_TARGET);
+      R2.setParameters(R2_HYST, R2_ROTUP, R2_ROTDOWN, R2_PAUSE);
+    #endif
+    #if ROLLUPS == 2 && STAGES >= 1
+      R2.stage[0].mod.setValue(R1_S0_MOD);
+      R2.stage[0].target.setValue(R1_S0_TARGET);
+      R2.stage[1].mod.setValue(R1_S1_MOD);
+      R2.stage[1].target.setValue(R1_S1_TARGET);
+    #endif
+    #if ROLLUPS == 2 && STAGES >= 2
+      R2.stage[2].mod.setValue(R1_S2_MOD);
+      R2.stage[2].target.setValue(R1_S2_TARGET);
+    #endif
+    #if ROLLUPS == 2 && STAGES >= 3
+      R2.stage[3].mod.setValue(R1_S3_MOD);
+      R2.stage[3].target.setValue(R1_S3_TARGET);
+    #endif
+    #if ROLLUPS == 2 && STAGES >= 4
+      R2.stage[4].mod.setValue(R1_S4_MOD);
+      R2.stage[4].target.setValue(R1_S4_TARGET);
     #endif
     #if FANS >= 1
-      F1.setParameters(F1_MOD, F1_HYST, true);
+      F1.setParameters(F1_MOD, F1_HYST);
     #endif
     #if FANS == 2
-      F2.setParameters(F2_MOD, F2_HYST, true);
+      F2.setParameters(F2_MOD, F2_HYST);
     #endif
     #if HEATERS >= 1
-      H1.setParameters(H1_MOD, H1_HYST, true);
+      H1.setParameters(H1_MOD, H1_HYST);
     #endif
     #if HEATERS == 2
-      H2.setParameters(H2_MOD, H2_HYST, true);
+      H2.setParameters(H2_MOD, H2_HYST);
     #endif
     #if TIMEPOINTS >= 1
-      T1.setParameters(TP1_TYPE, TP1_HOUR, TP1_MN_MOD, TP1_HEAT, TP1_COOL, TP1_RAMP);
+      T1.setParameters(TP1_TYPE, TP1_HOUR, TP1_MN_MOD, TP1_HEAT, TP1_COOL, TP1_HEAT_CLOUD, TP1_COOL_CLOUD, TP1_RAMP);
     #endif
     #if TIMEPOINTS >= 2
-      T2.setParameters(TP2_TYPE, TP2_HOUR, TP2_MN_MOD, TP2_HEAT, TP2_COOL, TP2_RAMP);
+      T2.setParameters(TP2_TYPE, TP2_HOUR, TP2_MN_MOD, TP2_HEAT, TP2_COOL, TP2_HEAT_CLOUD, TP2_COOL_CLOUD, TP2_RAMP);
     #endif
     #if TIMEPOINTS >= 3
-      T3.setParameters(TP3_TYPE, TP3_HOUR, TP3_MN_MOD, TP3_HEAT, TP3_COOL, TP3_RAMP);
+      T3.setParameters(TP3_TYPE, TP3_HOUR, TP3_MN_MOD, TP3_HEAT, TP3_COOL, TP3_HEAT_CLOUD, TP3_COOL_CLOUD, TP3_RAMP);
     #endif
     #if TIMEPOINTS >= 4
-      T4.setParameters(TP4_TYPE, TP4_HOUR, TP4_MN_MOD, TP4_HEAT, TP4_COOL, TP4_RAMP);
+      T4.setParameters(TP4_TYPE, TP4_HOUR, TP4_MN_MOD, TP4_HEAT, TP4_COOL, TP4_HEAT_CLOUD, TP4_COOL_CLOUD, TP4_RAMP);
     #endif
     #if TIMEPOINTS == 5
-      T5.setParameters(TP5_TYPE, TP5_HOUR, TP5_MN_MOD, TP5_HEAT, TP5_COOL, TP5_RAMP);
+      T5.setParameters(TP5_TYPE, TP5_HOUR, TP5_MN_MOD, TP5_HEAT, TP5_COOL, TP5_HEAT_CLOUD, TP5_COOL_CLOUD, TP5_RAMP);
     #endif
 
 
@@ -279,46 +361,38 @@ void loadParameters(){
 
     else{
       #if ROLLUPS >= 1
-        R1.loadEEPROMParameters();
-        R1.setIncrements(100);
-        R1.setSafety(true);
+        R1.EEPROMGet();
       #endif
       #if ROLLUPS == 2
-        R2.loadEEPROMParameters();
-        R2.setIncrements(100);
-        R2.setSafety(true);
+        R2.EEPROMGet();
       #endif
       #if FANS >=1
-        F1.loadEEPROMParameters();
-        F1.setSafety(true);
+        F1.EEPROMGet();
       #endif
       #if FANS == 2
-        F2.loadEEPROMParameters();
-        F2.setSafety(true);
+        F2.EEPROMGet();
       #endif
       #if HEATERS >=1
-        H1.loadEEPROMParameters();
-        H1.setSafety(true);
+        H1.EEPROMGet();
       #endif
       #if HEATERS ==2
-        H2.loadEEPROMParameters();
-        H2.setSafety(true);
+        H2.EEPROMGet();
       #endif
 
       #if TIMEPOINTS >= 1
-      T1.loadEEPROMParameters();
+      T1.EEPROMGet();
       #endif
       #if TIMEPOINTS >= 2
-        T2.loadEEPROMParameters();
+        T2.EEPROMGet();
       #endif
       #if TIMEPOINTS >= 3
-        T3.loadEEPROMParameters();
+        T3.EEPROMGet();
       #endif
       #if TIMEPOINTS >= 4
-        T4.loadEEPROMParameters();
+        T4.EEPROMGet();
       #endif
       #if TIMEPOINTS == 5
-        T5.loadEEPROMParameters();
+        T5.EEPROMGet();
       #endif
 
     }

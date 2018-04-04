@@ -157,26 +157,26 @@ At 19C, furnace  stop.
 
 
 //Create greenhouse object
-#define TIMEPOINTS            4
+#define TIMEPOINTS            3
         //# of timepoints
-#define ROLLUPS               2          //# of rollups
+#define ROLLUPS               1          //# of rollups
 #define STAGES                4          //# of cool stages (for rollups)
-#define FANS                  1          //# of fans
-#define HEATERS               1          //# of heaters
+#define FANS                  2          //# of fans
+#define HEATERS               0          //# of heaters
 //********************PINOUT**************************
 #define ROLLUP1_OPENING_PIN   0    //connect this pin to the opening relay (west motor)
 #define ROLLUP1_CLOSING_PIN   1    //connect this pin to the closing relay (west motor)
-#define ROLLUP2_OPENING_PIN   2    //connect this pin to the opening relay (east motor)
-#define ROLLUP2_CLOSING_PIN   3    //connect this pin to the closing relay (east motor)
+#define ROLLUP2_OPENING_PIN   OFF    //connect this pin to the opening relay (east motor)
+#define ROLLUP2_CLOSING_PIN   OFF    //connect this pin to the closing relay (east motor)
 #define FAN1_PIN              4  //Connect this pin to the fan relay
-#define FAN2_PIN              OFF  //Connect this pin to the fan relay
-#define HEATER1_PIN           5    //connect this pin to the heater relay
+#define FAN2_PIN              5  //Connect this pin to the fan relay
+#define HEATER1_PIN           OFF    //connect this pin to the heater relay
 #define HEATER2_PIN           OFF    //connect this pin to the heater relay
 #define SAFETY_PIN            OFF    //Connect this pin to the safety buzzer
 
-//********************Geographic/time parameters***************
-#define TIMEZONE              -5                  //(Eastern Time Zone)
-#define LATITUDE              45.50
+//*************COORD GÉOGRAPHIQUES*********************
+#define TIMEZONE              -5
+#define LATITUDE              46.03
 #define LONGITUDE             -73.56
 
 //TIME AND DATE ARE SET AT FIRST UPLOAD ONLY
@@ -212,6 +212,8 @@ TIMEPOINTS PARAMETERS - SYNTAX RULES:
 #define TP1_MN_MOD          0
 #define TP1_HEAT            16
 #define TP1_COOL            20
+#define TP1_HEAT_CLOUD      16
+#define TP1_COOL_CLOUD      18
 #define TP1_RAMP            15
 //*******************************************************Timepoint 2
 #define TP2_TYPE            CLOCK
@@ -219,30 +221,27 @@ TIMEPOINTS PARAMETERS - SYNTAX RULES:
 #define TP2_MN_MOD          0
 #define TP2_HEAT            18
 #define TP2_COOL            24
+#define TP2_HEAT_CLOUD      16
+#define TP2_COOL_CLOUD      18
 #define TP2_RAMP            15
 //*******************************************************Timepoint 3
 #define TP3_TYPE            SS
 #define TP3_HOUR            -1
 #define TP3_MN_MOD          0
-#define TP3_HEAT            14
-#define TP3_COOL            16
+#define TP3_HEAT            18
+#define TP3_COOL            22
+#define TP3_HEAT_CLOUD      16
+#define TP3_COOL_CLOUD      18
 #define TP3_RAMP            5
 //*******************************************************Timepoint 4
 #define TP4_TYPE            SS
 #define TP4_HOUR            0
 #define TP4_MN_MOD          0
-#define TP4_HEAT            16
-#define TP4_COOL            18
+#define TP4_HEAT            18
+#define TP4_COOL            22
+#define TP4_HEAT_CLOUD      16
+#define TP4_COOL_CLOUD      18
 #define TP4_RAMP            30
-//*******************************************************Timepoint 5
-/*
-#define TP5_TYPE            SS
-#define TP5_HOUR            0
-#define TP5_MN_MOD          0
-#define TP5_HEAT            16
-#define TP5_COOL            20
-#define TP5_RAMP            15
-*/
 //*******************************************************************
 /*
 ROLLUP PARAMETERS - SYNTAX RULES :
@@ -253,15 +252,15 @@ ROLLUP PARAMETERS - SYNTAX RULES :
 */
 //*******************************************************Rollup 1 (overral parameters)
 #define R1_HYST             1
-#define R1_ROTUP            210
-#define R1_ROTDOWN          190
-#define R1_PAUSE            30
+#define R1_ROTUP            25
+#define R1_ROTDOWN          25
+#define R1_PAUSE            5
 //*******************************************************Rollup 2 (overral parameters)
 
 #define R2_HYST             1
-#define R2_ROTUP            210
-#define R2_ROTDOWN          190
-#define R2_PAUSE            30
+#define R2_ROTUP            25
+#define R2_ROTDOWN          25
+#define R2_PAUSE            5
 
 //*******************************************************************
 /*
@@ -320,3 +319,71 @@ HEATER PARAMETERS - SYNTAX RULES:
 #define H2_MOD              -1
 
 //************************************************************************
+
+/*ROLLUP CALIBRATION - FIX OVERRIDE
+
+Conditions :
+ - rollup has been fully open or fully close for a while (SAFETY_DELAY(min))
+ - rollup is not moving
+Action :
+ - full opening or full closing cycle
+*/
+
+#define R1_RECALIBRATE
+#define R2_RECALIBRATE
+#define SAFETY_DELAY                  30
+
+
+/*FULL VENTILATION - FIX OVERRIDE
+
+Conditions :
+ -Full ventiliation action is called
+Action :
+ - open rollups and start all fans for a while (FULL_VENTILATION_DELAY(min))
+*/
+
+#define FULL_VENTILATION
+#define FULL_VENTILATION_DELAY        5
+
+
+/*DESHUM CYCLE - RELATIVE OVERRIDE
+
+Conditions :
+  - deshum cycle has been activated
+  -between start time and stop time
+  -temperature stays over a minimum
+Action :
+  - open rollups at target increment
+  AND/OR
+  - activate heater
+  AND/OR
+  - activate fan(s)
+*/
+
+//#define HEATER1_DESHUM
+//#define HEATER1_DESHUM_START_HOUR      6
+//#define HEATER1_DESHUM_START_MIN       5
+//#define HEATER1_DESHUM_STOP_HOUR       6
+//#define HEATER1_DESHUM_STOP_MIN        15
+
+//#define FAN1_DESHUM
+//#define FAN1_DESHUM_START_HOUR         6
+//#define FAN1_DESHUM_START_MIN          5
+//#define FAN1_DESHUM_STOP_HOUR          6
+//#define FAN1_DESHUM_STOP_MIN           20
+
+//#define ROLLUP1_DESHUM
+//#define ROLLUP1_DESHUM_INCREMENT       50
+//#define ROLLUP1_DESHUM_START_HOUR      6
+//#define ROLLUP1_DESHUM_START_MIN       5
+//#define ROLLUP1_DESHUM_STOP_HOUR       6
+//#define ROLLUP1_DESHUM_STOP_MIN        20
+
+//#define ROLLUP2_DESHUM
+//#define ROLLUP2_DESHUM_INCREMENT       50
+//#define ROLLUP2_DESHUM_START_HOUR      6
+//#define ROLLUP2_DESHUM_START_MIN       5
+//#define ROLLUP2_DESHUM_STOP_HOUR       6
+//#define ROLLUP2_DESHUM_STOP_MIN        20
+
+//#define DESHUM_MININIM                 14

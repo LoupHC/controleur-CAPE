@@ -91,7 +91,7 @@ void getGreenhouseTemp(){
     float temp = sensors.getTempCByIndex(0);
 
     if((temp <= -127.00)||(temp >= 85.00)){
-      temp = greenhouse._coolingTemp+10;
+      temp = greenhouse.coolingTemp()+10;
        greenhouseTemperature.setValue(temp);
       sensorFailure = true;
     }
