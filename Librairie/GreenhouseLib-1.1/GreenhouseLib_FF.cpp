@@ -33,15 +33,14 @@ Fan::Fan(){
     _localCounter = _counter;
     _counter++;
 
-    _mod.setLimits(0, 10);
-    _mod.setAddress(_localIndex);
+    mod.setLimits(0, 10);
+    mod.setAddress(_localIndex);
     _localIndex += sizeof(float);
 
-    _hyst.setLimits(0,5);
-    _hyst.setAddress(_localIndex);
+    hyst.setLimits(0,5);
+    hyst.setAddress(_localIndex);
     _localIndex += sizeof(float);
 
-    _debug = false;
     _routine = true;
     EEPROMTimer = 0;
     overrideTimer = 0;
@@ -87,19 +86,42 @@ Adjust to an external target temperature (Mode VAR_TEMP)
 */
 void Fan::routine(float target, float temp){
   if(_routine == true){
-      float activationTemp = target + _mod.value();
-      if (temp < (activationTemp - _hyst.value())) {
+      float activationTemp = target + mod.value();
+      if (temp < (activationTemp - hyst.value())) {
         	stop();
       }
       else if (temp > activationTemp) {
         	start();
       }
   }
+  else if(_fixOverride == true){
+    watchFixOverride();
+  }
+}
+void Fan::routine(boolean condition, float target, float temp){
+  if(_routine == true){
+      float activationTemp = target + mod.value();
+      if (temp < (activationTemp - hyst.value())) {
+        	stop();
+      }
+      else if (temp > activationTemp) {
+        	start();
+      }
+  }
+  else if(_fixOverride == true){
+    watchFixOverride();
+  }
+  else if(_relativeOverride == true){
+    watchRelativeOverride(condition);
+  }
 }
 
+//FIXED OVERRIDE ACTION TRIGGER
 void Fan::forceAction(unsigned short duration, boolean state){
   if(_routine == true){
     desactivateRoutine();
+    _fixOverride = true;
+    _overrideDuration = (unsigned long)duration*1000;
     overrideTimer = 0;
     if(state == true){
       start();
@@ -108,14 +130,13 @@ void Fan::forceAction(unsigned short duration, boolean state){
       stop();
     }
   }
-  if (overrideTimer > (unsigned long)duration*1000){
-    activateRoutine();
-  }
 }
 
-void Fan::forceAction(boolean condition, boolean state){
-  if((_routine == true)&&(condition == true)){
+//RELATIVE OVERRIDE ACTION TRIGGER
+void Fan::forceAction(boolean state){
+  if(_routine == true){
     desactivateRoutine();
+    _relativeOverride = true;
     if(state == true){
       start();
     }
@@ -123,10 +144,24 @@ void Fan::forceAction(boolean condition, boolean state){
       stop();
     }
   }
-  if(condition == false){
+}
+
+//FIX OVERRIDE WATCH
+void Fan::watchFixOverride(){
+  if (overrideTimer > _overrideDuration){
     activateRoutine();
+    _fixOverride = false;
   }
 }
+
+void Fan::watchRelativeOverride(boolean condition){
+  if(condition == false){
+    activateRoutine();
+    _relativeOverride = false;
+  }
+}
+
+
 
 void Fan::stop(){
   #ifdef IOS_OUTPUTS
@@ -181,68 +216,63 @@ void Fan::activateRoutine(){
 
 //programmation functions
 
-void Fan::setParameters(float temp, float hyst, boolean safety){
-  setHyst(hyst);
-  setMod(temp);
-  setSafety(safety);
+void Fan::setParameters(float modif, float hysteresis){
+  hyst.setValue(hysteresis);
+  mod.setValue(modif);
 }
 /*
 Or one by one...
 */
-void Fan::setHyst(float hyst){
-  _hyst.setValue(hyst);
-  EEPROM.put(_hyst.address(),hyst);
-}
 
-void Fan::setMod(float temp){
-  _mod.setValue(temp);
-  EEPROM.put(_mod.address(),temp);
-}
-
-void Fan::setSafety(boolean safety){
-  _safety = safety;
-}
 byte Fan::pin(){
   return _pin;
-}
-float Fan::hyst(){
-  return _hyst.value();
-}
-float Fan::hystMin(){
-  return _hyst.minimum();
-}
-float Fan::hystMax(){
-  return _hyst.maximum();
-}
-float Fan::mod(){
-  return _mod.value();
-}
-float Fan::modMin(){
-  return _mod.minimum();
-}
-float Fan::modMax(){
-  return _mod.maximum();
-}
-boolean Fan::safety(){
-  return _safety;
-}
-boolean Fan::debug(){
-  return _debug;
 }
 unsigned short Fan::nb(){
   return _localCounter;
 }
+boolean Fan::override(){
+  if(_routine == true){
+    return false;
+  }
+  else{
+    return true;
+  }
+}
+boolean Fan::isActive(){
+  #ifdef IOS_OUTPUTS
+  if(digitalRead(_pin) == _activate){
+    return true;
+  }
+  else{
+    return false;
+  }
+  #endif
 
+  #ifdef MCP_I2C_OUTPUTS
 
-void Fan::loadEEPROMParameters(){
+  if(mcp.digitalRead(_pin) == _activate){
+    return true;
+  }
+  else{
+    return false;
+  }
+  #endif
+}
 
-  float hyst;
-  EEPROM.get(_hyst.address(), hyst);
-  setHyst(hyst);
+void Fan::EEPROMPut(){
+  hyst.loadInEEPROM();
+  mod.loadInEEPROM();
+}
 
-  float mod;
-  EEPROM.get(_mod.address(), mod);
-  setMod(mod);
+void Fan::EEPROMGet(){
+
+  float hysteresis;
+  EEPROM.get(hyst.address(), hysteresis);
+  hyst.setValue(hysteresis);
+
+  float modif;
+  EEPROM.get(mod.address(), modif);
+  mod.setValue(modif);
 
   #ifdef DEBUG_EEPROM
     Serial.println(F("-------------------"));
@@ -250,14 +280,14 @@ void Fan::loadEEPROMParameters(){
     Serial.print(_localCounter);
     Serial.println(F("--------"));
     Serial.print(F("Address: "));
-    Serial.print(_hyst.address());
+    Serial.print(hyst.address());
     Serial.print(F(" - Value :"));
-    Serial.print(hyst);
+    Serial.print(hyst.value());
     Serial.println(F(" - (Hysteresis)"));
     Serial.print(F("Address: "));
-    Serial.print(_mod.address());
+    Serial.print(mod.address());
     Serial.print(F(" - Value :"));
-    Serial.print(mod);
+    Serial.print(mod.value());
     Serial.println(F("   - (Mod)"));
   #endif
 }
@@ -274,16 +304,14 @@ Heater::Heater(){
     _localCounter = _counter;
     _counter++;
 
-    _mod.setLimits(-10, 0);
-    _mod.setAddress(_localIndex);
+    mod.setLimits(-10, 0);
+    mod.setAddress(_localIndex);
     _localIndex += sizeof(float);
 
-    _hyst.setLimits(0,5);
-    _hyst.setAddress(_localIndex);
+    hyst.setLimits(0,5);
+    hyst.setAddress(_localIndex);
     _localIndex += sizeof(float);
 
-
-	  _debug = false;
     _routine = true;
     EEPROMTimer = 0;
     overrideTimer = 0;
@@ -325,18 +353,41 @@ Adjust to an external target temperature (Mode VAR_TEMP)
 */
 void Heater::routine(float target, float temp){
   	 if(_routine == true){
-      float activationTemp = target + _mod.value();
-      if (temp > (activationTemp + _hyst.value())) {
+      float activationTemp = target + mod.value();
+      if (temp > (activationTemp + hyst.value())) {
         	stop();
       } else if (temp < activationTemp) {
         	start();
       }
     }
+    else if(_fixOverride == true){
+      watchFixOverride();
+    }
   }
 
+  void Heater::routine(boolean condition, float target, float temp){
+  	 if(_routine == true){
+      float activationTemp = target + mod.value();
+      if (temp > (activationTemp + hyst.value())) {
+        	stop();
+      } else if (temp < activationTemp) {
+        	start();
+      }
+    }
+    else if(_fixOverride == true){
+      watchFixOverride();
+    }
+    else if(_relativeOverride == true){
+      watchRelativeOverride(condition);
+    }
+  }
+
+  //FIXED OVERRIDE ACTION TRIGGER
   void Heater::forceAction(unsigned short duration, boolean state){
     if(_routine == true){
       desactivateRoutine();
+      _fixOverride = true;
+      _overrideDuration = (unsigned long)duration*1000;
       overrideTimer = 0;
       if(state == true){
         start();
@@ -345,14 +396,13 @@ void Heater::routine(float target, float temp){
         stop();
       }
     }
-    if (overrideTimer > (unsigned long)duration*1000){
-      activateRoutine();
-    }
   }
 
-  void Heater::forceAction(boolean condition, boolean state){
-    if((_routine == true)&&(condition == true)){
+  //RELATIVE OVERRIDE ACTION TRIGGER
+  void Heater::forceAction(boolean state){
+    if(_routine == true){
       desactivateRoutine();
+      _relativeOverride = true;
       if(state == true){
         start();
       }
@@ -360,8 +410,20 @@ void Heater::routine(float target, float temp){
         stop();
       }
     }
+  }
+
+  //FIX OVERRIDE WATCH
+  void Heater::watchFixOverride(){
+    if (overrideTimer > _overrideDuration){
+      activateRoutine();
+      _fixOverride = false;
+    }
+  }
+
+  void Heater::watchRelativeOverride(boolean condition){
     if(condition == false){
       activateRoutine();
+      _relativeOverride = false;
     }
   }
 
@@ -415,68 +477,62 @@ void Heater::activateRoutine(){
 //programmation functions
 
 
-void Heater::setParameters(float temp, float hyst, boolean safety){
-  setHyst(hyst);
-  setMod(temp);
-  setSafety(safety);
+void Heater::setParameters(float modif, float hysteresis){
+  hyst.setValue(hysteresis);
+  mod.setValue(modif);
 }
 /*
 Or one by one...
 */
-void Heater::setHyst(float hyst){
-  _hyst.setValue(hyst);
-  EEPROM.put(_hyst.address(),hyst);
-}
-
-void Heater::setMod(float temp){
-  _mod.setValue(temp);
-  EEPROM.put(_mod.address(),temp);
-}
-
-void Heater::setSafety(boolean safety){
-  _safety = safety;
-}
 
 byte Heater::pin(){
   return _pin;
 }
-float Heater::hyst(){
-  return _hyst.value();
-}
-float Heater::hystMin(){
-  return _hyst.minimum();
-}
-float Heater::hystMax(){
-  return _hyst.maximum();
-}
-float Heater::mod(){
-  return _mod.value();
-}
-float Heater::modMin(){
-  return _mod.minimum();
-}
-float Heater::modMax(){
-  return _mod.maximum();
-}
-boolean Heater::safety(){
-  return _safety;
-}
-boolean Heater::debug(){
-  return _debug;
-}
 unsigned short Heater::nb(){
   return _localCounter;
 }
+boolean Heater::override(){
+  if(_routine == true){
+    return false;
+  }
+  else{
+    return true;
+  }
+}
 
-void Heater::loadEEPROMParameters(){
+boolean Heater::isActive(){
+  #ifdef IOS_OUTPUTS
+  if(digitalRead(_pin) == _activate){
+    return true;
+  }
+  else{
+    return false;
+  }
+  #endif
 
-  float hyst;
-  EEPROM.get(_hyst.address(), hyst);
-  setHyst(hyst);
+  #ifdef MCP_I2C_OUTPUTS
 
-  float mod;
-  EEPROM.get(_mod.address(), mod);
-  setMod(mod);
+  if(mcp.digitalRead(_pin) == _activate){
+    return true;
+  }
+  else{
+    return false;
+  }
+  #endif
+}
+void Heater::EEPROMPut(){
+  hyst.loadInEEPROM();
+  mod.loadInEEPROM();
+}
+void Heater::EEPROMGet(){
+
+  float hysteresis;
+  EEPROM.get(hyst.address(), hysteresis);
+  hyst.setValue(hysteresis);
+
+  float modif;
+  EEPROM.get(mod.address(), modif);
+  mod.setValue(modif);
 
   #ifdef DEBUG_EEPROM
     Serial.println(F("-------------------"));
@@ -484,14 +540,14 @@ void Heater::loadEEPROMParameters(){
     Serial.print(_localCounter);
     Serial.println(F("------"));
     Serial.print(F("Address: "));
-    Serial.print(_hyst.address());
+    Serial.print(hyst.address());
     Serial.print(F(" - Value :"));
-    Serial.print(hyst);
+    Serial.print(hyst.value());
     Serial.println(F(" - (Hysteresis)"));
     Serial.print(F("Address: "));
-    Serial.print(_mod.address());
+    Serial.print(mod.address());
     Serial.print(F(" - Value :"));
-    Serial.print(mod);
+    Serial.print(mod.value());
     Serial.println(F("   - (Mod)"));
   #endif
 }

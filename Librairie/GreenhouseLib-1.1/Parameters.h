@@ -21,6 +21,7 @@
 */
 
 #include "Arduino.h"
+#include "EEPROM.h"
 
 #ifndef Parameters_h
 #define Parameters_h
@@ -36,6 +37,7 @@ class floatParameter
     void setLastValue(float value);
     void updateLastValue();
     void setLimits(float minimum, float maximum);
+    void loadInEEPROM();
     float minimum();
     float maximum();
 
@@ -62,6 +64,7 @@ class uShortParameter
     void setLastValue(unsigned short value);
     void updateLastValue();
     void setLimits(unsigned short minimum, unsigned short maximum);
+    void loadInEEPROM();
     unsigned short minimum();
     unsigned short maximum();
     unsigned short value();
@@ -87,6 +90,7 @@ class shortParameter
     void setLastValue(short value);
     void updateLastValue();
     void setLimits(short minimum, short maximum);
+    void loadInEEPROM();
     short minimum();
     short maximum();
     short value();
@@ -112,6 +116,7 @@ class byteParameter
     void setLastValue(byte value);
     void updateLastValue();
     void setLimits(byte minimum, byte maximum);
+    void loadInEEPROM();
     byte minimum();
     byte maximum();
     byte value();

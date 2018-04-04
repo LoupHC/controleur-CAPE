@@ -40,7 +40,6 @@ OBJECT : Fan (cooling unit)
 Parameters :
 - activation temperature
 - hysteresis
-- safety mode
 */
 class Fan
 {
@@ -53,30 +52,28 @@ class Fan
 
       //action functions
       void routine(float target, float temp);
+      void routine(boolean condition, float target, float temp);
       void forceAction(unsigned short duration, boolean state);
-      void forceAction(boolean condition, boolean state);
+      void forceAction(boolean state);
 
       //programmation functions
-      void setParameters(float temp, float hyst, boolean safety);
-      void setHyst(float hyst);
-      void setMod(float temp);
-      void setSafety(boolean safety);
-      void loadEEPROMParameters();
+      void setParameters(float temp, float hyst);
+      void EEPROMGet();
+      void EEPROMPut();
 
 			//return private variables
 			byte pin();
-			float hyst();
-			float hystMin();
-			float hystMax();
-			float mod();
-			float modMin();
-			float modMax();
-			boolean safety();
-			boolean debug();
+      floatParameter hyst;
+      floatParameter mod;
       unsigned short nb();
+			boolean isActive();
+      boolean override();
 
 
     private:
+      void watchRoutine();
+      void watchFixOverride();
+      void watchRelativeOverride(boolean condition);
       void stop();
       void start();
       void desactivateRoutine();
@@ -87,18 +84,17 @@ class Fan
       boolean _desactivate;
 			byte _pin;
 
-      floatParameter _hyst;
-      floatParameter _mod;
-			boolean _safety;
 			//Logic variables
-			boolean _debug;
       boolean _routine;
+      boolean _fixOverride;
+      boolean _relativeOverride;
 			//Indexes
 			unsigned short _localIndex;
       static unsigned short _EEPROMindex;
   		unsigned short _localCounter;
   		static unsigned short _counter;
 			//Timer
+      unsigned long _overrideDuration;
       elapsedMillis overrideTimer;
       elapsedMillis EEPROMTimer;
 
@@ -110,7 +106,6 @@ OBJECT : Heater (heating unit)
 Parameters :
 - hysteresis
 - activation temperature
-- safety mode
 */
 
 class Heater
@@ -123,54 +118,51 @@ class Heater
 
       //action functions
       void routine(float target, float temp);
+      void routine(boolean condition, float target, float temp);
       void forceAction(unsigned short duration, boolean state);
-      void forceAction(boolean condition, boolean state);
+      void forceAction(boolean state);
 
           //programmation functions
-      void setParameters(float temp, float hyst, boolean safety);
-      void setHyst(float hyst);
-      void setMod(float temp);
-      void setSafety(boolean safety);
-      void loadEEPROMParameters();
+      void setParameters(float temp, float hyst);
+      void EEPROMGet();
+      void EEPROMPut();
 
 			//return private variables
 			byte pin();
-      float hyst();
-      float hystMin();
-			float hystMax();
-			float mod();
-			float modMin();
-			float modMax();
-			boolean safety();
-			boolean debug();
+
+      //Parameters
+      floatParameter hyst;
+      floatParameter mod;
+
+      boolean isActive();
+      boolean override();
       unsigned short nb();
 
     private:
-
+      void watchFixOverride();
+      void watchRelativeOverride(boolean condition);
       void stop();
       void start();
       void desactivateRoutine();
       void activateRoutine();
 			//const parameters
       boolean _relayType;
+
       boolean _activate;
       boolean _desactivate;
 		  byte _pin;
 
-      //Parameters
-		  floatParameter _hyst;
-		  floatParameter _mod;
-		  boolean _safety;
 			//logic
-			boolean _debug;
       boolean _routine;
+      boolean _fixOverride;
+      boolean _relativeOverride;
 			//indexes
       unsigned short _localIndex;
       static unsigned short _EEPROMindex;
   		unsigned short _localCounter;
   		static unsigned short _counter;
 			//timer
-
+      unsigned long _overrideDuration;
       elapsedMillis overrideTimer;
 			elapsedMillis EEPROMTimer;
 };

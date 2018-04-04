@@ -34,33 +34,41 @@ unsigned short Timepoint::_counter = 0;
 Timepoint::Timepoint(){
 
   _localIndex = TIMEPOINT_INDEX + _EEPROMindex;
-  _EEPROMindex += 15;
+  _EEPROMindex += 24;
   _localCounter = _counter;
   _counter++;
 
 
-  _type.setLimits(0, 2);
-  _type.setAddress(_localIndex);
+  type.setLimits(0, 2);
+  type.setAddress(_localIndex);
   _localIndex += 1;
 
-  _mnMod.setLimits(0, 59);
-  _mnMod.setAddress(_localIndex);
+  mnMod.setLimits(0, 59);
+  mnMod.setAddress(_localIndex);
   _localIndex += sizeof(short);
 
-  _hrMod.setLimits(0,23);
-  _hrMod.setAddress(_localIndex);
+  hrMod.setLimits(0,23);
+  hrMod.setAddress(_localIndex);
   _localIndex += sizeof(short);
 
-  _coolingTemp.setLimits(0,50);
-  _coolingTemp.setAddress(_localIndex);
+  coolingTemp.setLimits(0,50);
+  coolingTemp.setAddress(_localIndex);
   _localIndex += sizeof(float);
 
-  _heatingTemp.setLimits(0,50);
-  _heatingTemp.setAddress(_localIndex);
+  heatingTemp.setLimits(0,50);
+  heatingTemp.setAddress(_localIndex);
   _localIndex += sizeof(float);
 
-  _ramping.setLimits(0,60);
-  _ramping.setAddress(_localIndex);
+  coolingTempCloud.setLimits(0,50);
+  coolingTempCloud.setAddress(_localIndex);
+  _localIndex += sizeof(float);
+
+  heatingTempCloud.setLimits(0,50);
+  heatingTempCloud.setAddress(_localIndex);
+  _localIndex += sizeof(float);
+
+  ramping.setLimits(0,60);
+  ramping.setAddress(_localIndex);
   _localIndex += sizeof(unsigned short);
 
   EEPROMTimer = 0;
@@ -68,31 +76,14 @@ Timepoint::Timepoint(){
 
 Timepoint::~Timepoint(){}
 
-void Timepoint::checkTime(){
-  if (_type.value() == SR){
-    _time.setTime(sunRise[HOUR], sunRise[MINUT]);
-    _time.addTime(_hrMod.value(), _mnMod.value());
-    _hr = _time.hour();
-    _mn = _time.minut();
-  }
-  else if (_type.value() == CLOCK){
-    _hr = _hrMod.value();
-    _mn = _mnMod.value();
-  }
-
-  else if (_type.value() == SS){
-    _time.setTime(sunSet[HOUR], sunSet[MINUT]);
-    _time.addTime(_hrMod.value(), _mnMod.value());
-    _hr = _time.hour();
-    _mn = _time.minut();
-  }
-}
-
-void Timepoint::setParameters(byte type, short hour, short min, float heatingTemp, float coolingTemp, unsigned short ramping){
-    setTime(type, hour, min);
-    setHeatTemp(heatingTemp);
-    setCoolTemp(coolingTemp);
-    setRamping(ramping);
+void Timepoint::setParameters(byte typ, short hr, short mn, float heatTemp, float coolTemp, float heatTempCloud, float coolTempCloud, unsigned short ramp){
+    type.setValue(typ);
+    setTimepoint(hr, mn);
+    coolingTemp.setValue(coolTemp);
+    coolingTempCloud.setValue(coolTempCloud);
+    heatingTemp.setValue(heatTemp);
+    heatingTempCloud.setValue(heatTempCloud);
+    ramping.setValue(ramp);
 
     #ifdef DEBUG_TIMEPOINTS
       Serial.println(F("-----"));
@@ -102,150 +93,95 @@ void Timepoint::setParameters(byte type, short hour, short min, float heatingTem
       Serial.print(F(":"));
       Serial.println(_mn);
       Serial.print(F("Cooling temp : "));
-      Serial.println(_coolingTemp.value());
+      Serial.println(coolingTemp.value());
       Serial.print(F("Heating temp : "));
-      Serial.println(_heatingTemp.value());
+      Serial.println(heatingTemp.value());
       Serial.print(F("Ramping : "));
       Serial.println(ramping);
     #endif
 
 }
 
-void Timepoint::setTime(byte type, short hourMod, short minutMod){
+void Timepoint::setTimepoint(short hourMod, short minutMod){
 
-  if(type == SR || type == SS){
-    _hrMod.setLimits(-23,23);
-    _mnMod.setLimits(-59,59);
+  if(type.value() == SR || type.value() == SS){
+    hrMod.setLimits(-23,23);
+    mnMod.setLimits(-59,59);
   }
   else{
-    _hrMod.setLimits(0,23);
-    _mnMod.setLimits(0,59);
+    hrMod.setLimits(0,23);
+    mnMod.setLimits(0,59);
   }
 
-  if (type == SR){
+  if (type.value() == SR){
 		_time.setTime(sunRise[HOUR], sunRise[MINUT]);
     _time.addTime(hourMod, minutMod);
 		_hr = _time.hour();
 		_mn = _time.minut();
 	}
-	else if (type == CLOCK){
+	else if (type.value() == CLOCK){
 		_hr = hourMod;
 		_mn = minutMod;
   }
 
-  else if (type == SS){
+  else if (type.value() == SS){
 		_time.setTime(sunSet[HOUR], sunSet[MINUT]);
     _time.addTime(hourMod, minutMod);
     _hr = _time.hour();
 		_mn = _time.minut();
 	}
+  hrMod.setValue(hourMod);
+  mnMod.setValue(minutMod);
 
-  _type.setValue(type);
-  EEPROM.update(_type.address(),type);
-  _hrMod.setValue(hourMod);
-  EEPROM.put(_hrMod.address(), hourMod);
-  _mnMod.setValue(minutMod);
-  EEPROM.put(_mnMod.address(),minutMod);
 }
 
-void Timepoint::setHeatTemp(float heatingTemp){
-	_heatingTemp.setValue(heatingTemp);
-  EEPROM.put(_heatingTemp.address(),heatingTemp);
-}
-
-void Timepoint::setCoolTemp(float coolingTemp){
-	_coolingTemp.setValue(coolingTemp);
-  EEPROM.put(_coolingTemp.address(),coolingTemp);
-}
-
-void Timepoint::setRamping(unsigned short ramping){
-  _ramping.setValue(ramping);
-  EEPROM.put(_ramping.address(),ramping);
-}
-
-byte Timepoint::type(){
-  return _type.value();
-}
-
-short Timepoint::hrMod(){
-  return _hrMod.value();
-}
 unsigned short Timepoint::hr(){
   return _hr;
-}
-short Timepoint::hrModMin(){
-  return _hrMod.minimum();
-}
-short Timepoint::hrModMax(){
-  return _hrMod.maximum();
-}
-short Timepoint::mnMod(){
-  return _mnMod.value();
 }
 
 unsigned short Timepoint::mn(){
   return _mn;
 }
 
-short Timepoint::mnModMin(){
-  return _mnMod.minimum();
-}
-short Timepoint::mnModMax(){
-  return _mnMod.maximum();
-}
-float Timepoint::heatingTemp(){
-  return _heatingTemp.value();
-}
-float Timepoint::heatingTempMin(){
-  return _heatingTemp.minimum();
-}
-float Timepoint::heatingTempMax(){
-  return _heatingTemp.maximum();
-}
-float Timepoint::coolingTemp(){
-  return _coolingTemp.value();
-}
-float Timepoint::coolingTempMin(){
-  return _coolingTemp.minimum();
-}
-float Timepoint::coolingTempMax(){
-  return _coolingTemp.maximum();
-}
-
-unsigned short Timepoint::ramping(){
-  return _ramping.value();
-}
-unsigned short Timepoint::rampingMin(){
-  return _ramping.minimum();
-}
-unsigned short Timepoint::rampingMax(){
-  return _ramping.maximum();
-}
-
 unsigned short Timepoint::nb(){
   return _localCounter;
 }
 
-void Timepoint::loadEEPROMParameters(){
+void Timepoint::EEPROMPut(){
+  type.loadInEEPROM();
+  mnMod.loadInEEPROM();
+  hrMod.loadInEEPROM();
+  coolingTemp.loadInEEPROM();
+  coolingTempCloud.loadInEEPROM();
+  heatingTempCloud.loadInEEPROM();
+  ramping.loadInEEPROM();
+}
 
-  byte type = EEPROM.read(_type.address());
+void Timepoint::EEPROMGet(){
+
+  byte typ = EEPROM.read(type.address());
   short hr;
-  EEPROM.get(_hrMod.address(), hr);
+  EEPROM.get(hrMod.address(), hr);
   short mn;
-  EEPROM.get(_mnMod.address(), mn);
-  setTime(type, hr, mn);
+  EEPROM.get(mnMod.address(), mn);
+  float heatTemp;
+  EEPROM.get(heatingTemp.address(), heatTemp);
+  float coolTemp;
+  EEPROM.get(coolingTemp.address(), coolTemp);
+  float heatTempCloud;
+  EEPROM.get(heatingTempCloud.address(), heatTempCloud);
+  float coolTempCloud;
+  EEPROM.get(coolingTempCloud.address(), coolTempCloud);
+  unsigned short ramp;
+  EEPROM.get(ramping.address(), ramp);
 
-  float heatingTemp;
-  EEPROM.get(_heatingTemp.address(), heatingTemp);
-  setHeatTemp(heatingTemp);
-
-  float coolingTemp;
-  EEPROM.get(_coolingTemp.address(), coolingTemp);
-  setCoolTemp(coolingTemp);
-
-  unsigned short ramping;
-  EEPROM.get(_ramping.address(), ramping);
-  setRamping(ramping);
+  type.setValue(typ);
+  setTimepoint(hr, mn);
+  coolingTemp.setValue(coolTemp);
+  coolingTempCloud.setValue(coolTempCloud);
+  heatingTemp.setValue(heatTemp);
+  heatingTempCloud.setValue(heatTempCloud);
+  ramping.setValue(ramp);
 
   #ifdef DEBUG_EEPROM
     Serial.println(F("-------------------"));
@@ -253,34 +189,44 @@ void Timepoint::loadEEPROMParameters(){
     Serial.print(_localCounter);
     Serial.println(F("------"));
     Serial.print(F("Address: "));
-    Serial.print(_type.address());
+    Serial.print(type.address());
     Serial.print(F(" - Value :"));
-    Serial.print(type);
+    Serial.print(type.value());
     Serial.println(F("   - (Type)"));
     Serial.print(F("Address: "));
-    Serial.print(_hrMod.address());
+    Serial.print(hrMod.address());
     Serial.print(F(" - Value :"));
     Serial.print(hr);
     Serial.println(F("   - (Hour)"));
     Serial.print(F("Address: "));
-    Serial.print(_mnMod.address());
+    Serial.print(mnMod.address());
     Serial.print(F(" - Value :"));
     Serial.print(mn);
     Serial.println(F("   - (Min)"));
     Serial.print(F("Address: "));
-    Serial.print(_heatingTemp.address());
+    Serial.print(heatingTemp.address());
     Serial.print(F(" - Value :"));
-    Serial.print(heatingTemp);
-    Serial.println(F(" - (Heating Temperature)"));
+    Serial.print(heatingTemp.value());
+    Serial.println(F(" - (Heating Temperature - Sun)"));
     Serial.print(F("Address: "));
-    Serial.print(_coolingTemp.address());
+    Serial.print(coolingTemp.address());
     Serial.print(F(" - Value :"));
-    Serial.print(coolingTemp);
-    Serial.println(F(" - (Cooling Temperature)"));
+    Serial.print(coolingTemp.value());
+    Serial.println(F(" - (Cooling Temperature - Sun)"));
     Serial.print(F("Address: "));
-    Serial.print(_ramping.address());
+    Serial.print(heatingTempCloud.address());
     Serial.print(F(" - Value :"));
-    Serial.print(ramping);
+    Serial.print(heatingTempCloud.value());
+    Serial.println(F(" - (Heating Temperature - Cloud)"));
+    Serial.print(F("Address: "));
+    Serial.print(coolingTempCloud.address());
+    Serial.print(F(" - Value :"));
+    Serial.print(coolingTempCloud.value());
+    Serial.println(F(" - (Cooling Temperature - Cloud)"));
+    Serial.print(F("Address: "));
+    Serial.print(ramping.address());
+    Serial.print(F(" - Value :"));
+    Serial.print(ramping.value());
     Serial.println(F("   - (Ramping)"));
   #endif
 }

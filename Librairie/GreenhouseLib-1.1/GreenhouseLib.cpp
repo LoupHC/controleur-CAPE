@@ -31,8 +31,10 @@ Greenhouse::Greenhouse(int timezone, float latitude, float longitude, byte timep
   _timezone = timezone;
   _latitude = latitude;
   _longitude = longitude;
+  _weather = SUN;
+  _alarm = false;
   for (byte x = 0; x < _rollups; x++){
-    rollup[x].setStages(_stages+1);
+    rollup[x].setStages(_stages);
   }
 }
 
@@ -56,20 +58,56 @@ void Greenhouse::fullRoutine(byte rightNow[6], float greenhouseTemperature){
   startRamping();
   #if MAX_ROLLUPS >= 1
   for (byte x = 0; x < _rollups; x++){
-    rollup[x].manualRoutine(_coolingTemp, greenhouseTemperature);
+    rollup[x].EEPROMPut();
+    rollup[x].routine(_coolingTemp, greenhouseTemperature);
   }
   #endif
   #if MAX_FANS >= 1
   for (byte x = 0; x < _fans; x++){
+    fan[x].EEPROMPut();
     fan[x].routine(_coolingTemp, greenhouseTemperature);
   }
   #endif
   #if MAX_HEATERS >= 1
   for (byte x = 0; x < _heaters; x++){
-
+    heater[x].EEPROMPut();
     heater[x].routine(_heatingTemp, greenhouseTemperature);
   }
   #endif
+  for (byte x = 0; x < _timepoints; x++){
+    timepoint[x].EEPROMPut();
+  }
+  if(_alarm == true){
+    checkAlarm(greenhouseTemperature);
+  }
+}
+
+void Greenhouse::fullRoutine(byte rightNow[6], float* coolingTemp, float* heatingTemp){
+  setNow(rightNow);
+  solarCalculations();
+  checkProgramSuccession();
+  selectActualProgram();
+  startRamping();
+  #if MAX_ROLLUPS >= 1
+  for (byte x = 0; x < _rollups; x++){
+    rollup[x].EEPROMPut();
+  }
+  #endif
+  #if MAX_FANS >= 1
+  for (byte x = 0; x < _fans; x++){
+    fan[x].EEPROMPut();
+  }
+  #endif
+  #if MAX_HEATERS >= 1
+  for (byte x = 0; x < _heaters; x++){
+    heater[x].EEPROMPut();
+  }
+  #endif
+  for (byte x = 0; x < _timepoints; x++){
+    timepoint[x].EEPROMPut();
+  }
+  *coolingTemp = _coolingTemp;
+  *heatingTemp = _heatingTemp;
 }
 
 void Greenhouse::solarCalculations(){
@@ -77,9 +115,6 @@ void Greenhouse::solarCalculations(){
   //Première lecture d'horloge pour définir le lever et coucher du soleil
   setSunrise();
   setSunset();
-  for(int x = 0; x < _timepoints;x++){
-    timepoint[x].checkTime();
-  }
 }
 
 void Greenhouse::initTimeLord(int timezone, float latitude, float longitude){
@@ -128,7 +163,8 @@ void Greenhouse::checkProgramSuccession(){
   if(_timepoints > 1){
     for(int x = 1; x < _timepoints;x++){
       if (((timepoint[x].hr() == timepoint[x-1].hr())  && (timepoint[x].mn() < timepoint[x-1].mn()))||(timepoint[x].hr() < timepoint[x-1].hr())){
-        timepoint[x].setTime(timepoint[x-1].type(),timepoint[x-1].hrMod(),timepoint[x-1].mnMod());
+        timepoint[x].type.setValue(timepoint[x-1].type.value());
+        timepoint[x].setTimepoint(timepoint[x-1].hrMod.value(),timepoint[x-1].mnMod.value());
         Serial.println("Error");
       }
     }
@@ -166,48 +202,129 @@ void Greenhouse::selectActualProgram(){
 }
 
 void Greenhouse::setTempCible(){
-  _coolingTemp = timepoint[_timepoint-1].coolingTemp();
-  _heatingTemp = timepoint[_timepoint-1].heatingTemp();
+  if(_weather == SUN){
+    _coolingTemp = timepoint[_timepoint-1].coolingTemp.value();
+    _heatingTemp = timepoint[_timepoint-1].heatingTemp.value();
+  }
+  else if(_weather == CLOUD){
+      _coolingTemp = timepoint[_timepoint-1].coolingTempCloud.value();
+      _heatingTemp = timepoint[_timepoint-1].heatingTempCloud.value();
+  }
 }
 
 void Greenhouse::startRamping(){
-  //Définition des variables locales
-  float newHeatingTemp;
-  float newCoolingTemp;
+  if(_weather == SUN){
+    _newCoolingTemp = timepoint[_timepoint-1].coolingTemp.value();
+    _newHeatingTemp = timepoint[_timepoint-1].heatingTemp.value();
+  }
+  else if(_weather == CLOUD){
+      _newCoolingTemp = timepoint[_timepoint-1].coolingTempCloud.value();
+      _newHeatingTemp = timepoint[_timepoint-1].heatingTempCloud.value();
+  }
 
-  newHeatingTemp = timepoint[_timepoint-1].heatingTemp();
-  newCoolingTemp = timepoint[_timepoint-1].coolingTemp();
-  unsigned long rampTime = (unsigned long)timepoint[_timepoint-1].ramping()*60000;
+  unsigned long rampTime = (unsigned long)timepoint[_timepoint-1].ramping.value()*60000;
+
   if (ramping > rampTime){
 
-    if (newCoolingTemp > _coolingTemp){
+    if (_newCoolingTemp > _coolingTemp){
       _coolingTemp += 0.5;
-      if(_coolingTemp > newCoolingTemp){
-        _coolingTemp = newCoolingTemp;
+      if(_coolingTemp > _newCoolingTemp){
+        _coolingTemp = _newCoolingTemp;
       }
     }
-    else if (newCoolingTemp < _coolingTemp){
+    else if (_newCoolingTemp < _coolingTemp){
       _coolingTemp -= 0.5;
-      if(_coolingTemp < newCoolingTemp){
-        _coolingTemp = newCoolingTemp;
+      if(_coolingTemp < _newCoolingTemp){
+        _coolingTemp = _newCoolingTemp;
       }
     }
-    if (newHeatingTemp > _heatingTemp){
+    if (_newHeatingTemp > _heatingTemp){
       _heatingTemp += 0.5;
-      if(_heatingTemp > newHeatingTemp){
-        _heatingTemp = newHeatingTemp;
+      if(_heatingTemp > _newHeatingTemp){
+        _heatingTemp = _newHeatingTemp;
       }
     }
-    else if (newHeatingTemp < _heatingTemp){
+    else if (_newHeatingTemp < _heatingTemp){
       _heatingTemp -= 0.5;
-      if(_heatingTemp < newHeatingTemp){
-        _heatingTemp = newHeatingTemp;
+      if(_heatingTemp < _newHeatingTemp){
+        _heatingTemp = _newHeatingTemp;
       }
     }
     ramping = 0;
   }
 }
 
+void Greenhouse::setWeather(byte weather){
+  _weather = weather;
+}
+
 byte Greenhouse::rightNow(byte index){
   return _rightNow[index];
+}
+
+byte Greenhouse::weather(){
+  return _weather;
+}
+byte Greenhouse::nowTimepoint(){
+  return _timepoint;
+}
+float Greenhouse::heatingTemp(){
+  return _heatingTemp;
+}
+float Greenhouse::coolingTemp(){
+  return _coolingTemp;
+}
+
+void Greenhouse::checkAlarm(float temperature){
+  if(_alarmMin != OFF_VAL){
+    if(temperature < _alarmMin){
+      alarmBlast();
+    }
+    else{
+      stopAlarm();
+    }
+  }
+  if(_alarmMax != OFF_VAL){
+    if(temperature > _alarmMax){
+      alarmBlast();
+    }
+    else{
+      stopAlarm();
+    }
+  }
+}
+void Greenhouse::addAlarm(byte alarmPin){
+  _alarmPin = alarmPin;
+  _alarm = true;
+  _alarmMax = OFF_VAL;
+  _alarmMin = OFF_VAL;
+}
+void Greenhouse::setAlarmMaxTemp(float temperature){
+  _alarmMax = temperature;
+}
+void Greenhouse::setAlarmMinTemp(float temperature){
+  _alarmMin = temperature;
+}
+void Greenhouse::alarmBlast(){
+  if(!_alarmIsTriggered){
+    #ifdef IOS_OUTPUTS
+        digitalWrite(_alarmPin, HIGH);
+    #endif
+
+    #ifdef MCP_I2C_OUTPUTS
+        mcp.digitalWrite(_alarmPin, HIGH);
+    #endif
+    _alarmIsTriggered = true;
+  }
+}
+void Greenhouse::stopAlarm(){
+  if (_alarmIsTriggered){
+    #ifdef IOS_OUTPUTS
+        digitalWrite(_alarmPin, LOW);
+    #endif
+      #ifdef MCP_I2C_OUTPUTS
+        mcp.digitalWrite(_alarmPin, LOW);
+    #endif
+    _alarmIsTriggered = false;
+  }
 }

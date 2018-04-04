@@ -72,6 +72,9 @@ void floatParameter::setLimits(float minimum, float maximum){
   _minimum = minimum;
   _maximum = maximum;
 }
+void floatParameter::loadInEEPROM(){
+  EEPROM.put(_address, _value);
+}
 
 float floatParameter::minimum(){
   return _minimum;
@@ -135,6 +138,9 @@ void shortParameter::setLimits(short minimum, short maximum){
   _maximum = maximum;
 }
 
+void shortParameter::loadInEEPROM(){
+  EEPROM.put(_address, _value);
+}
 short shortParameter::minimum(){
   return _minimum;
 }
@@ -198,6 +204,9 @@ void uShortParameter::setLimits(unsigned short minimum, unsigned short maximum){
   _maximum = maximum;
 }
 
+void uShortParameter::loadInEEPROM(){
+  EEPROM.put(_address, _value);
+}
 unsigned short uShortParameter::minimum(){
   return _minimum;
 }
@@ -261,6 +270,9 @@ void byteParameter::setLimits (byte minimum, byte maximum){
   _maximum = maximum;
 }
 
+void byteParameter::loadInEEPROM(){
+  EEPROM.update(_address, _value);
+}
 byte byteParameter::minimum(){
   return _minimum;
 }

@@ -39,30 +39,21 @@ class Timepoint
 		Timepoint();
     ~Timepoint();
 		void setParameters(byte type, short hour, short min, float heatingTemp, float coolingTemp, unsigned short ramping);
-		void setTime(byte type, short hour, short min);
-		void setHeatTemp(float heatingTemp);
-		void setCoolTemp(float coolingTemp);
-		void setRamping(unsigned short ramping);
-    void loadEEPROMParameters();
-		void checkTime();
-		byte type();
+		void setParameters(byte type, short hour, short min, float heatingTemp, float coolingTemp, float heatingTempCloud, float coolingTempCloud, unsigned short ramping);
+		void setTimepoint(short hour, short min);
+    void EEPROMGet();
+    void EEPROMPut();
+
+		byteParameter type;
+		shortParameter hrMod;
+		shortParameter mnMod;
+		floatParameter heatingTemp;
+		floatParameter coolingTemp;
+		floatParameter heatingTempCloud;
+		floatParameter coolingTempCloud;
+		uShortParameter ramping;
 		unsigned short hr();
-		short hrMod();
-		short hrModMin();
-		short hrModMax();
  		unsigned short mn();
- 		short mnMod();
- 		short mnModMin();
- 		short mnModMax();
- 		float heatingTemp();
- 		float heatingTempMin();
- 		float heatingTempMax();
- 		float coolingTemp();
- 		float coolingTempMin();
- 		float coolingTempMax();
-		unsigned short ramping();
-		unsigned short rampingMin();
-		unsigned short rampingMax();
     unsigned short nb();
 
 		static short sunRise[3];
@@ -72,12 +63,6 @@ class Timepoint
 	private:
 		short _hr;
 		short _mn;
-		byteParameter _type;
-		shortParameter _hrMod;
-		shortParameter _mnMod;
-		floatParameter _heatingTemp;
-		floatParameter _coolingTemp;
-		uShortParameter _ramping;
 		timeParameter _time;
 
   	unsigned short _localIndex;

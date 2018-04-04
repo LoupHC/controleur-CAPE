@@ -6,7 +6,14 @@
 
 
 //Debug lines
-//#define DEBUG_ROLLUP_TIMING
+//#define DEBUG_ROLLUP
+#define DEBUG_ROLLUP1_TIMING
+//#define DEBUG_ROLLUP2_TIMING
+#define DEBUG_ROLLUP1_POSITION
+//#define DEBUG_ROLLUP2_POSITION
+//#define DEBUG_ROLLUP1_STATE
+//#define DEBUG_ROLLUP2_STATE
+#define DEBUG_ROLLUP1_CYCLE
 //#define DEBUG_ROLLUP_TEMP
 //#define DEBUG_FAN
 //#define DEBUG_HEATER
@@ -17,7 +24,7 @@
 //#define DEBUG_CLOCK
 //#define DEBUG_SETUP
 
-#define TEST_MODE
+//#define TEST_MODE
 //Outputs type
 //#define IOS_OUTPUTS
 #define MCP_I2C_OUTPUTS
@@ -46,7 +53,6 @@
 
 #define OFF_VAL 255
 #define OFF     255
-#define SAFETY_DELAY 1800000
 
 #define HOUR 2
 #define MINUT 1
@@ -54,6 +60,12 @@
 #define CLOCK 1
 #define SS 2
 
+#define ROUTINE 0
+#define FIX 1
+#define RELATIVE 2
+
+#define SUN   0
+#define CLOUD 1
 
 #ifdef MCP_I2C_OUTPUTS
   #include <Wire.h>

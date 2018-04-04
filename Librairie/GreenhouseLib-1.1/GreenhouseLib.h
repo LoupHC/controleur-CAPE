@@ -25,8 +25,6 @@
 #include "elapsedMillis.h"
 #include "Parameters.h"
 #include "Defines.h"
-
-
 #include "GreenhouseLib_rollups.h"
 #include "GreenhouseLib_FF.h"
 #include "GreenhouseLib_timing.h"
@@ -37,16 +35,17 @@
 #define GreenhouseLib_h
 
 
-
 class Greenhouse
 {
   public:
     Greenhouse(int timezone, float latitude, float longitude, byte timepoints, byte rollups, byte stages, byte fans, byte heaters);
     ~Greenhouse();
     void setNow(byte rightNow[]);
+    void setWeather(byte weather);
     void solarCalculations();
     void startingParameters();
     void EEPROMUpdate();
+
     TimeLord myLord;
     #if MAX_TIMEPOINTS >= 1
       Timepoint timepoint[MAX_TIMEPOINTS];
@@ -63,24 +62,51 @@ class Greenhouse
 
     //Confirm timepoint, cooling/heating temperatures, routine for each outputs
     void fullRoutine(byte rightNow[], float greenhouseTemperature);
-    //Update parameters in EEPROM for each instance, every 10 seconds
-    //void EEPROMUpdate();
+    void fullRoutine(byte rightNow[6], float* coolingTemp, float* heatingTemp);
+
+    void checkAlarm(float temperature);
+    void addAlarm(byte alarmPin);
+    void setAlarmMaxTemp(float temperature);
+    void setAlarmMinTemp(float temperature);
+    void alarmBlast();
+    void stopAlarm();
+
     byte rightNow(byte index);
+    byte weather();
+    byte nowTimepoint();
+    float heatingTemp();
+    float coolingTemp();
+
+
+
+
+  private:
+
+    byte _timezone;         //time zone of your location (Most of Quebec : -5)
+    float _longitude;
+    float _latitude;
     byte _rightNow[6];      //actual time
     byte _sunTime[6];       //for sunrise, sunset calculation
     float _heatingTemp;     //reference temperature for heating devices
     float _coolingTemp;     //reference temperature for cooling devices
-    byte _timezone;         //time zone of your location (Most of Quebec : -5)
-    float _longitude;
-    float _latitude;
-    byte _timepoint;        //actual timepoint
+    float _newHeatingTemp;     //reference temperature for heating devices
+    float _newCoolingTemp;     //reference temperature for cooling devices
 
-  private:
+    byte _timepoint;        //actual timepoint
+    byte _weather;
+
     byte _timepoints;        //# of timepoints
     byte _rollups;           //# of rollups
     byte _stages;
     byte _fans;              //# of fans
     byte _heaters;           //# of heaters
+
+    byte _alarmPin;
+    boolean _alarm;
+    boolean _alarmIsTriggered;
+    float _alarmMin;
+    float _alarmMax;
+
     void initTimeLord(int timezone, float latitude, float longitude);
     void setSunrise();
     void setSunset();
@@ -90,6 +116,7 @@ class Greenhouse
     void startRamping();
 
     elapsedMillis ramping;  //ramping timer
+    elapsedMillis beep;
 
 
 };
