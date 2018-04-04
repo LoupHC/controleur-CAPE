@@ -175,8 +175,6 @@ class Rollup
     void calibrateStages();
     void checkTimings();
     void checkStageSuccession();
-		void printPause();
-		void printEndPause();
     void debugPrints();
 
 };

@@ -121,12 +121,13 @@ Destructor
 Rollup::~Rollup(){}
 /*
 INIT OUTPUTS
-- MAN_TEMP : target temperature is set outisde the class and differ for each cooling stage
-relayType:
+Relay type :
 - ACT_HIGH : relay is active when pin is high
 - ACT_LOW : relay is active when pin is low
-rOpen (pin connected to opening relay)
-rClose (pin connected to closing relay)
+Pins :
+- rOpen (pin connected to opening relay)
+- rClose (pin connected to closing relay)
+
 */
 void Rollup::initOutputs(boolean relayType, byte rOpen, byte rClose){
   //define opening/closing pins
@@ -138,16 +139,10 @@ void Rollup::initOutputs(boolean relayType, byte rOpen, byte rClose){
   if (_relayType == ACT_HIGH){
     _activate = true;
     _desactivate = false;
-    #ifdef DEBUG_SETUP
-      //Serial.println("Relay is active_high...");
-    #endif
   }
   else if (_relayType == ACT_LOW){
     _activate = false;
     _desactivate = true;
-    #ifdef DEBUG_SETUP
-      //Serial.println("Relay is active_low...");
-    #endif
   }
 
   //initial state
@@ -156,7 +151,6 @@ void Rollup::initOutputs(boolean relayType, byte rOpen, byte rClose){
     pinMode(_closingPin, OUTPUT);
     digitalWrite(_openingPin, _desactivate);
     digitalWrite(_closingPin, _desactivate);
-    //Serial.println("Outputs are regular I/Os...");
   #endif
 
   #ifdef MCP_I2C_OUTPUTS
@@ -164,7 +158,6 @@ void Rollup::initOutputs(boolean relayType, byte rOpen, byte rClose){
     mcp.pinMode(_closingPin, OUTPUT);
     mcp.digitalWrite(_openingPin, _desactivate);
     mcp.digitalWrite(_closingPin, _desactivate);
-    //Serial.println("Outputs are I2C I/Os from MCP23008...");
   #endif
 
 }
@@ -173,9 +166,10 @@ void Rollup::initStage(Stage stage, float modif, byte inc){
   stage.mod.setValue(modif);
   stage.target.setValue(inc);
 }
-/*
-Open or close the rollups to specific increment, using a multiple cooling stages logic
-Adjust to an external target temperature (Mode MAN_TEMP)
+/*ROLLUP ROUTINE
+  Open or close the rollups to specific increment, using a multiple cooling stages logic
+  Adjust to an external target temperature
+  (Optional) Turn in override mode when a certain condition is true
 */
 void Rollup::routine(float targetTemp, float temp){
     checkTimings();
@@ -416,7 +410,6 @@ void Rollup::resumeCycle(String type){
       if((_routine == true)&&(_routineCycle == true)){
       _stage = _stage+_stageMove;
       _routineCycle = false;
-      printEndPause();
     }
   }
   _moveTime = 0;
@@ -550,36 +543,6 @@ void Rollup::stopClosing(){
 	}
 }
 
-void Rollup::printPause(){
-  #ifdef DEBUG_ROLLUP1_STATE
-  if(_localCounter == 0){
-    Serial.println(F("-------------"));
-    Serial.println(F("Rollup1 : start pause"));
-  }
-  #endif
-  #ifdef DEBUG_ROLLUP2_STATE
-  if(_localCounter == 1){
-    Serial.println(F("-------------"));
-    Serial.println(F("Rollup2 : start pause"));
-  }
-  #endif
-}
-
-void Rollup::printEndPause(){
-
-  #ifdef DEBUG_ROLLUP1_STATE
-  if(_localCounter == 0){
-    Serial.println(F("-------------"));
-    Serial.println(F("Rollup1 : stop pause"));
-  }
-  #endif
-  #ifdef DEBUG_ROLLUP2_STATE
-  if(_localCounter == 1){
-    Serial.println(F("-------------"));
-    Serial.println(F("Rollup2 : stop pause"));
-  }
-  #endif
-}
 /*
 Program all parameters all at once...
 */
@@ -590,7 +553,7 @@ void Rollup::setParameters(float rHyst, unsigned short rotUp, unsigned short rot
   pause.setValue(paus);
 }
 /*
-Or one by one...
+Define
 */
 void Rollup::setStages(byte stages){
   _stages = stages;
