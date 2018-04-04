@@ -154,10 +154,15 @@ void setup() {
   //start communication with relay driver
   #ifdef MCP_I2C_OUTPUTS
     mcp.begin();
-    mcp.pinMode(SAFETY_PIN, OUTPUT);
-    mcp.digitalWrite(SAFETY_PIN, HIGH);
   #endif
-
+  //Add safety alarm
+  greenhouse.addAlarm(ACT_LOW, ALARM_PIN);
+  #ifdef ALARM_MAX_TEMP
+    greenhouse.setAlarmMaxTemp(ALARM_MAX_TEMP);
+  #endif
+  #ifdef ALARM_MIN_TEMP
+    greenhouse.setAlarmMinTemp(ALARM_MIN_TEMP);
+  #endif
   // change RTC settings
   #ifdef RTC_TIME_SET
     rtc.setTime(HOUR_SET, MINUT_SET, SECOND_SET);
@@ -233,10 +238,7 @@ void loop() {
   #if HEATERS == 2
     H2.routine(heatingTemperature, greenhouseTemperature.value());
   #endif
-  #ifdef TEMP_ALARM
     greenhouse.checkAlarm(greenhouseTemperature.value());
-  #endif
-
   #if defined(R1_RECALIBRATE) && ROLLUPS >= 1
     recalibrateR1();
   #endif

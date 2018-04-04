@@ -17,7 +17,7 @@
 //#define DEBUG_ROLLUP_TEMP
 //#define DEBUG_FAN
 //#define DEBUG_HEATER
-#define DEBUG_EEPROM
+//#define DEBUG_EEPROM
 //#define DEBUG_TIMEPOINTS
 //#define DEBUG_PROGRAM
 //#define DEBUG_SOLARCALC

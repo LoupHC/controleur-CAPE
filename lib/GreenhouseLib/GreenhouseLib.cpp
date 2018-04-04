@@ -32,7 +32,7 @@ Greenhouse::Greenhouse(int timezone, float latitude, float longitude, byte timep
   _latitude = latitude;
   _longitude = longitude;
   _weather = SUN;
-  _alarm = false;
+  _alarmEnabled = false;
   for (byte x = 0; x < _rollups; x++){
     rollup[x].setStages(_stages);
   }
@@ -77,7 +77,7 @@ void Greenhouse::fullRoutine(byte rightNow[6], float greenhouseTemperature){
   for (byte x = 0; x < _timepoints; x++){
     timepoint[x].EEPROMPut();
   }
-  if(_alarm == true){
+  if(_alarmEnabled){
     checkAlarm(greenhouseTemperature);
   }
 }
@@ -280,24 +280,44 @@ void Greenhouse::checkAlarm(float temperature){
     if(temperature < _alarmMin){
       alarmBlast();
     }
-    else{
-      stopAlarm();
-    }
-  }
-  if(_alarmMax != OFF_VAL){
-    if(temperature > _alarmMax){
+    else if(temperature > _alarmMax){
       alarmBlast();
     }
     else{
       stopAlarm();
     }
   }
+  if(_alarmMax != OFF_VAL){
+  }
 }
-void Greenhouse::addAlarm(byte alarmPin){
-  _alarmPin = alarmPin;
-  _alarm = true;
-  _alarmMax = OFF_VAL;
-  _alarmMin = OFF_VAL;
+void Greenhouse::addAlarm(boolean relayType, byte alarmPin){
+  if (_alarmPin != OFF){
+    _alarmRelayType = relayType;
+    _alarmPin = alarmPin;
+    _alarmEnabled = true;
+    _alarmMax = OFF_VAL;
+    _alarmMin = OFF_VAL;
+    #ifdef IOS_OUTPUTS
+        pinMode(_alarmPin, OUTPUT);
+        if(_alarmRelayType == ACT_LOW){
+          digitalWrite(_alarmPin, HIGH);
+        }
+        else{
+          digitalWrite(_alarmPin, LOW);
+        }
+    #endif
+      #ifdef MCP_I2C_OUTPUTS
+          mcp.pinMode(_alarmPin, OUTPUT);
+          if(_alarmRelayType == ACT_LOW){
+            mcp.digitalWrite(_alarmPin, HIGH);
+          }
+          else{
+            mcp.digitalWrite(_alarmPin, LOW);
+          }
+    #endif
+
+  }
+
 }
 void Greenhouse::setAlarmMaxTemp(float temperature){
   _alarmMax = temperature;
@@ -306,25 +326,49 @@ void Greenhouse::setAlarmMinTemp(float temperature){
   _alarmMin = temperature;
 }
 void Greenhouse::alarmBlast(){
-  if(!_alarmIsTriggered){
-    #ifdef IOS_OUTPUTS
-        digitalWrite(_alarmPin, HIGH);
-    #endif
+  if(_alarmEnabled){
+    if(_alarmIsTriggered == false){
+      #ifdef IOS_OUTPUTS
+        if(_alarmRelayType == ACT_LOW){
+          digitalWrite(_alarmPin, LOW);
+        }
+        else{
+          digitalWrite(_alarmPin, HIGH);
+        }
+      #endif
 
-    #ifdef MCP_I2C_OUTPUTS
-        mcp.digitalWrite(_alarmPin, HIGH);
-    #endif
-    _alarmIsTriggered = true;
+      #ifdef MCP_I2C_OUTPUTS
+        if(_alarmRelayType == ACT_LOW){
+          mcp.digitalWrite(_alarmPin, LOW);
+        }
+        else{
+          mcp.digitalWrite(_alarmPin, HIGH);
+        }
+      #endif
+      _alarmIsTriggered = true;
+    }
   }
 }
 void Greenhouse::stopAlarm(){
-  if (_alarmIsTriggered){
-    #ifdef IOS_OUTPUTS
-        digitalWrite(_alarmPin, LOW);
-    #endif
-      #ifdef MCP_I2C_OUTPUTS
-        mcp.digitalWrite(_alarmPin, LOW);
-    #endif
-    _alarmIsTriggered = false;
+  if(_alarmEnabled){
+    if (_alarmIsTriggered){
+      #ifdef IOS_OUTPUTS
+        if(_alarmRelayType == ACT_LOW){
+          digitalWrite(_alarmPin, HIGH);
+        }
+        else{
+          digitalWrite(_alarmPin, LOW);
+        }
+      #endif
+        #ifdef MCP_I2C_OUTPUTS
+          if(_alarmRelayType == ACT_LOW){
+            mcp.digitalWrite(_alarmPin, HIGH);
+          }
+          else{
+            mcp.digitalWrite(_alarmPin, LOW);
+          }
+      #endif
+      _alarmIsTriggered = false;
+    }
   }
 }

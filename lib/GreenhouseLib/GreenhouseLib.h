@@ -65,7 +65,7 @@ class Greenhouse
     void fullRoutine(byte rightNow[6], float* coolingTemp, float* heatingTemp);
 
     void checkAlarm(float temperature);
-    void addAlarm(byte alarmPin);
+    void addAlarm(boolean type, byte alarmPin);
     void setAlarmMaxTemp(float temperature);
     void setAlarmMinTemp(float temperature);
     void alarmBlast();
@@ -102,7 +102,8 @@ class Greenhouse
     byte _heaters;           //# of heaters
 
     byte _alarmPin;
-    boolean _alarm;
+    boolean _alarmEnabled;
+    boolean _alarmRelayType;
     boolean _alarmIsTriggered;
     float _alarmMin;
     float _alarmMax;

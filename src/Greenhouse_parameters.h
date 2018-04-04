@@ -172,7 +172,7 @@ At 19C, furnace  stop.
 #define FAN2_PIN              5  //Connect this pin to the fan relay
 #define HEATER1_PIN           OFF    //connect this pin to the heater relay
 #define HEATER2_PIN           OFF    //connect this pin to the heater relay
-#define SAFETY_PIN            OFF    //Connect this pin to the safety buzzer
+#define ALARM_PIN             7    //Connect this pin to the safety buzzer
 
 //*************COORD GÉOGRAPHIQUES*********************
 #define TIMEZONE              -5
@@ -319,6 +319,12 @@ HEATER PARAMETERS - SYNTAX RULES:
 #define H2_MOD              -1
 
 //************************************************************************
+/*ALARM
+  Fire alarm (ALARM_PIN) when temperature get over a maximum or under a minimum
+*/
+#define ALARM_MIN_TEMP    10.00
+#define ALARM_MAX_TEMP    30.00
+
 
 /*ROLLUP CALIBRATION - FIX OVERRIDE
 
