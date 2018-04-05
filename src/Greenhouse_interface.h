@@ -291,6 +291,7 @@ void lcdPrintTemp(byte _row){
 }
 
 void lcdPrintTarget(){
+  lcd.setCursor(9,0); lcd.print(F("           "));
   lcd.setCursor(9,0);
    lcd.print(F("|")); lcd.print((int)heatingTemperature); lcd.print(F("-"));lcd.print((int)coolingTemperature);
 
@@ -737,6 +738,7 @@ void menuAction(){
       select();
     }
     if(keyPressed == 'D'){
+      menu = MODE_DISPLAY;key = '1';firstPrint = true; unpressedTimer = 0; line = 0;
       lcd.noBlink();
       switch(action){
         case 1:
@@ -747,6 +749,7 @@ void menuAction(){
             else if(greenhouse.weather() == CLOUD){
               greenhouse.setWeather(SUN);
             }
+            key = '9';
           }
         break;
         case 2:
@@ -765,7 +768,7 @@ void menuAction(){
           }
         break;
       }
-      menu = MODE_DISPLAY;action = 0;key = '1';firstPrint = true; unpressedTimer = 0; line = 0;
+      action = 0;
     }
   }
 
@@ -905,7 +908,6 @@ void confirmType(String variableName, byte typeValue){
 
 
 void checkIIC(){
-  lcd.clear();
   lcd.noBlink();
   lcd.setCursor(0,0);
   lcd.print("----I2C DEVICES-----");
@@ -968,7 +970,6 @@ void checkIIC(){
     lcd.print(validAddress[5],HEX);
   }
 }
-
 
 void checkRelays(){
   GPIO = B00000000;
