@@ -3,7 +3,7 @@ Voici le **Contrôleur-avec-pas-de-nom**, un outil développé par et pour les m
 
 Il dispose de fonctionalités permettant :
 - de définir jusqu'à 5 périodes horaires permettant de faire évoluer la température normale au courant de la journée
-- de contrôler l'ouverture et la fermeture de moteurs de côtés ouvrants, avec possibilité d'utiliser un programme distinct pour chaque côté de la serre (deux modes de contrôle sont disponibles, un présentement à l'essai, l'autre disponible de manière expérimentale)
+- de contrôler l'ouverture et la fermeture de moteurs de côtés ouvrants, avec possibilité d'utiliser un programme distinct pour chaque côté de la serre
 - d'actionner un ou deux systèmes de ventilation
 - d'actionner une ou deux fournaises
 
@@ -13,7 +13,7 @@ Le code, les schémas, les plans nécessaires à la conception de ce contrôleur
 
 Pour des détails quant  l'utilisation du présent code, consultez la section [wiki](https://github.com/LoupHC/controleur-CAPE/wiki).
 ## Librairies
-Pour exécuter le programme, vous devez préalablement déplacer toutes les fichiers du dossier "Librairie" ainsi que le dossier "GreenhouseLib" dans la banque de librairie de votre IDE.
+Pour exécuter le programme, vous devez préalablement déplacer toutes les fichiers du dossier "lib" dans la banque de librairie de votre IDE.
 
 Aperçu des librairies nécessaires: 
 - GreenhouseLib : fonctions liées au contrôle du climat
