@@ -210,8 +210,8 @@ TIMEPOINTS PARAMETERS - SYNTAX RULES:
 #define TP1_TYPE            SR
 #define TP1_HOUR            0
 #define TP1_MN_MOD          0
-#define TP1_HEAT            16
-#define TP1_COOL            20
+#define TP1_HEAT_SUN        16
+#define TP1_COOL_SUN        20
 #define TP1_HEAT_CLOUD      16
 #define TP1_COOL_CLOUD      18
 #define TP1_RAMP            15
@@ -219,8 +219,8 @@ TIMEPOINTS PARAMETERS - SYNTAX RULES:
 #define TP2_TYPE            CLOCK
 #define TP2_HOUR            10
 #define TP2_MN_MOD          0
-#define TP2_HEAT            18
-#define TP2_COOL            24
+#define TP2_HEAT_SUN        18
+#define TP2_COOL_SUN        24
 #define TP2_HEAT_CLOUD      16
 #define TP2_COOL_CLOUD      18
 #define TP2_RAMP            15
@@ -228,8 +228,8 @@ TIMEPOINTS PARAMETERS - SYNTAX RULES:
 #define TP3_TYPE            SS
 #define TP3_HOUR            -1
 #define TP3_MN_MOD          0
-#define TP3_HEAT            18
-#define TP3_COOL            22
+#define TP3_HEAT_SUN        18
+#define TP3_COOL_SUN        22
 #define TP3_HEAT_CLOUD      16
 #define TP3_COOL_CLOUD      18
 #define TP3_RAMP            5
@@ -237,8 +237,8 @@ TIMEPOINTS PARAMETERS - SYNTAX RULES:
 #define TP4_TYPE            SS
 #define TP4_HOUR            0
 #define TP4_MN_MOD          0
-#define TP4_HEAT            18
-#define TP4_COOL            22
+#define TP4_HEAT_SUN        18
+#define TP4_COOL_SUN        22
 #define TP4_HEAT_CLOUD      16
 #define TP4_COOL_CLOUD      18
 #define TP4_RAMP            30
