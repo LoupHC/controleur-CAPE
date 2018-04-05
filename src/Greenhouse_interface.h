@@ -162,6 +162,8 @@ const char T5MIN[Code_lenght]     = "4502";
 const char T5HEATT[Code_lenght]   = "4503";
 const char T5COOLT[Code_lenght]   = "4504";
 const char T5RAMP[Code_lenght]    = "4505";
+const char TESTRELAYS[Code_lenght]= "5555";
+const char TESTIIC[Code_lenght]   = "6666";
 
 elapsedMillis unpressedTimer;
 elapsedMillis pressedTimer;
@@ -184,6 +186,9 @@ char keyPressed;
 byte flashCount1 = 0;
 byte flashCount2 = 0;
 
+boolean relayTest = false;
+const byte RyDriverI2CAddr = B0100000;//device ID
+byte GPIO = B11111111;
 
 //***************************************************
 //********************MACROS**************************
@@ -893,6 +898,60 @@ void confirmType(String variableName, byte typeValue){
   lcd.print("]   ");
 }
 
+
+void checkIIC(){
+
+}
+
+void checkRelays(){
+  GPIO = B00000000;
+  if(relayTest == false){
+   Wire.begin();
+   Wire.beginTransmission(0x20); //begins talking to the slave device
+   Wire.write(0x00); //selects the IODIRA register
+   Wire.write(0x00); //this sets all port A pins to outputs
+   Wire.write(0x09);//select GPIO register
+   Wire.write(GPIO);//set register value-all low
+   Wire.endTransmission(); //stops talking to device
+  }
+  relayTest = true;
+  GPIO = B11111111;
+
+  Wire.beginTransmission(RyDriverI2CAddr);
+  Wire.write(0x09);//select GPIO register
+  Wire.write(GPIO);//set register value-all high
+  Wire.endTransmission();
+
+  delay(5000);
+
+  GPIO = B00000000;
+
+  Wire.beginTransmission(RyDriverI2CAddr);
+  Wire.write(0x09);//select GPIO register
+  Wire.write(GPIO);//set register value-all high
+  Wire.endTransmission();
+
+  delay(1000);
+
+  for(int x = 0; x < 8; x++){
+    bitWrite(GPIO, x, 1);
+    Wire.beginTransmission(RyDriverI2CAddr);
+    Wire.write(0x09);//select GPIO register
+    Wire.write(GPIO);//set register value-all high
+    Wire.endTransmission();
+    delay(1000);
+  }
+
+  for(int x = 0; x < 8; x++){
+    bitWrite(GPIO, x, 0);
+    Wire.beginTransmission(RyDriverI2CAddr);
+    Wire.write(0x09);//select GPIO register
+    Wire.write(GPIO);//set register value-all high
+    Wire.endTransmission();
+    delay(1000);
+  }
+}
+
 void menuSetParameter(){
   if(firstPrint == true){
     lcd.clear();
@@ -900,6 +959,7 @@ void menuSetParameter(){
     lcd.print(F("-Parameter Selected-"));
     firstPrint = false;
   }
+
 //Général
   if(!strcmp(Data, SETDAY)){
     unsigned short daySet = (unsigned short)greenhouse.rightNow(3);
@@ -1668,7 +1728,23 @@ void menuSetParameter(){
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
+
+  else if(!strcmp(Data, T5RAMP)){
+    confirmVariable("   T5 - RAMPING", T5.ramping.minimum(),T5.ramping.value(),T5.ramping.maximum());
+    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+      T5.ramping.setValue(usvariable);
+      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+    }
+  }
 #endif
+  else if(!strcmp(Data, TESTRELAYS)){
+    checkRelays();
+  }
+
+  else if(!strcmp(Data, TESTIIC)){
+    checkIIC();
+  }
+
   else{
   lcd.noBlink();menu = MODE_PROGRAM;firstPrint = true;line = 0;
   }
