@@ -327,31 +327,27 @@ void Greenhouse::setAlarmMinTemp(float temperature){
 }
 void Greenhouse::alarmBlast(){
   if(_alarmEnabled){
-    if(_alarmIsTriggered == false){
-      #ifdef IOS_OUTPUTS
-        if(_alarmRelayType == ACT_LOW){
-          digitalWrite(_alarmPin, LOW);
-        }
-        else{
-          digitalWrite(_alarmPin, HIGH);
-        }
-      #endif
+    #ifdef IOS_OUTPUTS
+      if(_alarmRelayType == ACT_LOW){
+        digitalWrite(_alarmPin, LOW);
+      }
+      else{
+        digitalWrite(_alarmPin, HIGH);
+      }
+    #endif
 
-      #ifdef MCP_I2C_OUTPUTS
-        if(_alarmRelayType == ACT_LOW){
-          mcp.digitalWrite(_alarmPin, LOW);
-        }
-        else{
-          mcp.digitalWrite(_alarmPin, HIGH);
-        }
-      #endif
-      _alarmIsTriggered = true;
-    }
+    #ifdef MCP_I2C_OUTPUTS
+      if(_alarmRelayType == ACT_LOW){
+        mcp.digitalWrite(_alarmPin, LOW);
+      }
+      else{
+        mcp.digitalWrite(_alarmPin, HIGH);
+      }
+    #endif
   }
 }
 void Greenhouse::stopAlarm(){
   if(_alarmEnabled){
-    if (_alarmIsTriggered){
       #ifdef IOS_OUTPUTS
         if(_alarmRelayType == ACT_LOW){
           digitalWrite(_alarmPin, HIGH);
@@ -369,6 +365,5 @@ void Greenhouse::stopAlarm(){
           }
       #endif
       _alarmIsTriggered = false;
-    }
   }
 }
