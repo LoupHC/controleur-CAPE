@@ -189,6 +189,8 @@ byte flashCount2 = 0;
 boolean relayTest = false;
 const byte RyDriverI2CAddr = B0100000;//device ID
 byte GPIO = B11111111;
+byte validAddress[6] = {0};
+
 
 //***************************************************
 //********************MACROS**************************
@@ -621,7 +623,10 @@ void temperaturesDisplay(){
           case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T2.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T2.ramping.value());break;
         #endif
         #if TIMEPOINTS >= 3
-          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T3.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T3.ramping.value());break;
+
+if(firstPrint == true){
+  firstPrint = false;
+}    case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T3.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T3.ramping.value());break;
         #endif
         #if TIMEPOINTS == 4
           case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T4.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T4.ramping.value());break;
@@ -900,8 +905,70 @@ void confirmType(String variableName, byte typeValue){
 
 
 void checkIIC(){
+  lcd.clear();
+  lcd.noBlink();
+  lcd.setCursor(0,0);
+  lcd.print("----I2C DEVICES-----");
 
+  byte error, address;
+  int nDevices = 0;
+
+  for(address = 1; address < 127; address++ ) {
+    // The i2c_scanner uses the return value of
+    // the Write.endTransmisstion to see if
+    // a device did acknowledge to the address.
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+    if (error == 0)
+    {
+      validAddress[nDevices] = address;
+      nDevices++;
+    }
+  }
+  lcd.setCursor(0,1);
+  if(validAddress[0] != 0){
+    lcd.print("0x");
+    if (validAddress[0]<16)
+      lcd.print("0");
+    lcd.print(validAddress[0],HEX);
+  }
+  lcd.setCursor(0,2);
+  if(validAddress[1] != 0){
+    lcd.print("0x");
+    if (validAddress[1]<16)
+      lcd.print("0");
+    lcd.print(validAddress[1],HEX);
+  }
+  lcd.setCursor(0,3);
+  if(validAddress[2] != 0){
+    lcd.print("0x");
+    if (validAddress[2]<16)
+      lcd.print("0");
+    lcd.print(validAddress[2],HEX);
+  }
+  lcd.setCursor(10,1);
+  if(validAddress[3] != 0){
+    lcd.print("0x");
+    if (validAddress[3]<16)
+      lcd.print("0");
+    lcd.print(validAddress[3],HEX);
+  }
+  lcd.setCursor(10,2);
+  if(validAddress[4] != 0){
+    lcd.print("0x");
+    if (validAddress[4]<16)
+      lcd.print("0");
+    lcd.print(validAddress[4],HEX);
+  }
+  lcd.setCursor(10,3);
+  if(validAddress[5] != 0){
+    lcd.print("0x");
+    if (validAddress[5]<16)
+      lcd.print("0");
+    lcd.print(validAddress[5],HEX);
+  }
 }
+
 
 void checkRelays(){
   GPIO = B00000000;
@@ -1743,6 +1810,9 @@ void menuSetParameter(){
 
   else if(!strcmp(Data, TESTIIC)){
     checkIIC();
+    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+      menu = MODE_DISPLAY;key = '1';firstPrint = true; unpressedTimer = 0; line = 0;
+    }
   }
 
   else{
