@@ -563,8 +563,23 @@ void timepointsDisplay(){
       #if TIMEPOINTS ==4
       lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
       #endif
-      #if TIMEPOINTS ==4
+      #if TIMEPOINTS >4
+      lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());lcd.print(F("-")); lcdPrintDigits(T5.hr());lcd.print(F(":"));lcdPrintDigits(T5.mn());
+      #endif
+      #if TIMEPOINTS >=4
       switch (T4.type.value()){
+        case 0: lcd.print("(SR)");break;
+        case 1: lcd.print("(CL)");break;
+        case 2: lcd.print("(SS)");break;
+      }
+      #endif
+      break;
+      case 5:
+      #if TIMEPOINTS ==5
+      lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcdPrintDigits(T5.hr());lcd.print(F(":"));lcdPrintDigits(T5.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
+      #endif
+      #if TIMEPOINTS ==5
+      switch (T5.type.value()){
         case 0: lcd.print("(SR)");break;
         case 1: lcd.print("(CL)");break;
         case 2: lcd.print("(SS)");break;
@@ -610,8 +625,11 @@ void temperaturesDisplay(){
         #if TIMEPOINTS >= 3
           case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTemp.value());lcd.print(F("-")); lcd.print(T3.coolingTemp.value());lcd.print(F(" R")); lcd.print(T3.ramping.value());break;
         #endif
-        #if TIMEPOINTS == 4
+        #if TIMEPOINTS >= 4
           case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());lcd.print(F(" R")); lcd.print(T4.ramping.value());break;
+        #endif
+        #if TIMEPOINTS == 5
+          case 5: lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcd.print(T5.heatingTemp.value());lcd.print(F("-")); lcd.print(T5.coolingTemp.value());lcd.print(F(" R")); lcd.print(T5.ramping.value());break;
         #endif
       }
     }
@@ -624,13 +642,13 @@ void temperaturesDisplay(){
           case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T2.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T2.ramping.value());break;
         #endif
         #if TIMEPOINTS >= 3
-
-if(firstPrint == true){
-  firstPrint = false;
-}    case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T3.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T3.ramping.value());break;
+          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTemp.value());lcd.print(F("-")); lcd.print(T3.coolingTemp.value());lcd.print(F(" R")); lcd.print(T3.ramping.value());break;
         #endif
-        #if TIMEPOINTS == 4
-          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T4.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T4.ramping.value());break;
+        #if TIMEPOINTS >= 4
+          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());lcd.print(F(" R")); lcd.print(T4.ramping.value());break;
+        #endif
+        #if TIMEPOINTS == 5
+          case 5: lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcd.print(T5.heatingTemp.value());lcd.print(F("-")); lcd.print(T5.coolingTemp.value());lcd.print(F(" R")); lcd.print(T5.ramping.value());break;
         #endif
       }
     }
@@ -1045,7 +1063,7 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, SETMONTH)){
     unsigned short monthSet = (unsigned short)greenhouse.rightNow(4);
-    confirmVariable("SET MONTH",0,monthSet,31);
+    confirmVariable("SET MONTH",1,monthSet,12);
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       #ifdef CLOCK_DS3231
         unsigned short year = 2000+(unsigned short)greenhouse.rightNow(5);

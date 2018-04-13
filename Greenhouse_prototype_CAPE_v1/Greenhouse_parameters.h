@@ -147,7 +147,7 @@ At 17C, furnace will start.
 At 19C, furnace  stop.
 */
 
-//#define COMPUTER_INTERFACE    //Uncomment this line if you rely only on this sheet for programming
+#define COMPUTER_INTERFACE    //Uncomment this line if you rely only on this sheet for programming
 
 //************************************************************
 //*******************CONTROL PARAMETERS***********************
@@ -157,21 +157,21 @@ At 19C, furnace  stop.
 
 
 //Create greenhouse object
-#define TIMEPOINTS            3
+#define TIMEPOINTS            4
         //# of timepoints
-#define ROLLUPS               1          //# of rollups
+#define ROLLUPS               2          //# of rollups
 #define STAGES                4          //# of cool stages (for rollups)
-#define FANS                  2          //# of fans
-#define HEATERS               0          //# of heaters
+#define FANS                  1          //# of fans
+#define HEATERS               1          //# of heaters
 //********************PINOUT**************************
 #define ROLLUP1_OPENING_PIN   0    //connect this pin to the opening relay (west motor)
 #define ROLLUP1_CLOSING_PIN   1    //connect this pin to the closing relay (west motor)
-#define ROLLUP2_OPENING_PIN   OFF    //connect this pin to the opening relay (east motor)
-#define ROLLUP2_CLOSING_PIN   OFF    //connect this pin to the closing relay (east motor)
-#define FAN1_PIN              4  //Connect this pin to the fan relay
-#define FAN2_PIN              5  //Connect this pin to the fan relay
-#define HEATER1_PIN           OFF    //connect this pin to the heater relay
+#define ROLLUP2_OPENING_PIN   2    //connect this pin to the opening relay (east motor)
+#define ROLLUP2_CLOSING_PIN   3    //connect this pin to the closing relay (east motor)
+#define HEATER1_PIN           4    //connect this pin to the heater relay
 #define HEATER2_PIN           OFF    //connect this pin to the heater relay
+#define FAN1_PIN              5  //Connect this pin to the fan relay
+#define FAN2_PIN              OFF  //Connect this pin to the fan relay
 #define ALARM_PIN             7    //Connect this pin to the safety buzzer
 
 //*************COORD GÉOGRAPHIQUES*********************
@@ -242,6 +242,15 @@ TIMEPOINTS PARAMETERS - SYNTAX RULES:
 #define TP4_HEAT_CLOUD      16
 #define TP4_COOL_CLOUD      18
 #define TP4_RAMP            30
+//*******************************************************Timepoint 5
+#define TP5_TYPE            SS
+#define TP5_HOUR            0
+#define TP5_MN_MOD          30
+#define TP5_HEAT_SUN        16
+#define TP5_COOL_SUN        20
+#define TP5_HEAT_CLOUD      16
+#define TP5_COOL_CLOUD      18
+#define TP5_RAMP            30
 //*******************************************************************
 /*
 ROLLUP PARAMETERS - SYNTAX RULES :
@@ -322,8 +331,8 @@ HEATER PARAMETERS - SYNTAX RULES:
 /*ALARM
   Fire alarm (ALARM_PIN) when temperature get over a maximum or under a minimum
 */
-#define ALARM_MIN_TEMP    10.00
-#define ALARM_MAX_TEMP    30.00
+#define ALARM_MIN_TEMP    5.00
+#define ALARM_MAX_TEMP    35.00
 
 
 /*ROLLUP CALIBRATION - FIX OVERRIDE
@@ -366,30 +375,30 @@ Action :
   - activate fan(s)
 */
 
-//#define HEATER1_DESHUM
-//#define HEATER1_DESHUM_START_HOUR      6
-//#define HEATER1_DESHUM_START_MIN       5
-//#define HEATER1_DESHUM_STOP_HOUR       6
-//#define HEATER1_DESHUM_STOP_MIN        15
+#define HEATER1_DESHUM
+#define HEATER1_DESHUM_START_HOUR      6
+#define HEATER1_DESHUM_START_MIN       5
+#define HEATER1_DESHUM_STOP_HOUR       6
+#define HEATER1_DESHUM_STOP_MIN        10
 
-//#define FAN1_DESHUM
-//#define FAN1_DESHUM_START_HOUR         6
-//#define FAN1_DESHUM_START_MIN          5
-//#define FAN1_DESHUM_STOP_HOUR          6
-//#define FAN1_DESHUM_STOP_MIN           20
+#define FAN1_DESHUM
+#define FAN1_DESHUM_START_HOUR         6
+#define FAN1_DESHUM_START_MIN          5
+#define FAN1_DESHUM_STOP_HOUR          6
+#define FAN1_DESHUM_STOP_MIN           20
 
-//#define ROLLUP1_DESHUM
-//#define ROLLUP1_DESHUM_INCREMENT       50
-//#define ROLLUP1_DESHUM_START_HOUR      6
-//#define ROLLUP1_DESHUM_START_MIN       5
-//#define ROLLUP1_DESHUM_STOP_HOUR       6
-//#define ROLLUP1_DESHUM_STOP_MIN        20
+#define ROLLUP1_DESHUM
+#define ROLLUP1_DESHUM_INCREMENT       50
+#define ROLLUP1_DESHUM_START_HOUR      6
+#define ROLLUP1_DESHUM_START_MIN       5
+#define ROLLUP1_DESHUM_STOP_HOUR       6
+#define ROLLUP1_DESHUM_STOP_MIN        20
 
-//#define ROLLUP2_DESHUM
-//#define ROLLUP2_DESHUM_INCREMENT       50
-//#define ROLLUP2_DESHUM_START_HOUR      6
-//#define ROLLUP2_DESHUM_START_MIN       5
-//#define ROLLUP2_DESHUM_STOP_HOUR       6
-//#define ROLLUP2_DESHUM_STOP_MIN        20
+#define ROLLUP2_DESHUM
+#define ROLLUP2_DESHUM_INCREMENT       50
+#define ROLLUP2_DESHUM_START_HOUR      6
+#define ROLLUP2_DESHUM_START_MIN       5
+#define ROLLUP2_DESHUM_STOP_HOUR       6
+#define ROLLUP2_DESHUM_STOP_MIN        20
 
-//#define DESHUM_MININIM                 14
+#define DESHUM_MININIM                 14
