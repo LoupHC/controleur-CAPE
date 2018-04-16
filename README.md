@@ -1,5 +1,5 @@
-# controleur-CAPE
-Voici le **Contrôleur-avec-pas-de-nom**, un outil développé par et pour les membres de la CAPÉ (Coopérative pour l'agriculture de proximité écologique) pour permettre aux petites, moyennes et grosses fermes d'automatiser leurs serres à une fraction du coût du marché.
+# l'Otomate
+Voici l'**Otomate**, un outil développé par et pour les membres de la CAPÉ (Coopérative pour l'agriculture de proximité écologique) pour permettre aux petites, moyennes et grosses fermes d'automatiser leurs serres à une fraction du coût du marché.
 
 Il dispose de fonctionalités permettant :
 - de définir jusqu'à 5 périodes horaires permettant de faire évoluer la température normale au courant de la journée
