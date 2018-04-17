@@ -13,7 +13,7 @@ Le code, les schémas, les plans nécessaires à la conception de ce contrôleur
 
 Pour des détails quant  l'utilisation du présent code, consultez la section [wiki](https://github.com/LoupHC/controleur-CAPE/wiki).
 ## Librairies
-Pour exécuter le programme, vous devez préalablement déplacer toutes les fichiers du dossier "lib" dans la banque de librairie de votre IDE.
+Pour exécuter le programme, vous devez préalablement déplacer toutes les fichiers du dossier "librairies" dans la banque de librairie de votre IDE.
 
 Aperçu des librairies nécessaires: 
 - GreenhouseLib : fonctions liées au contrôle du climat
