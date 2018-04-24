@@ -37,7 +37,7 @@
 #define MAX_STAGES 5
 
 //EEPROM indexation
-#define ROLLUP_INDEX 1
+#define ROLLUP_INDEX 10
 #define FAN_INDEX     101
 #define HEATER_INDEX  120
 #define TIMEPOINT_INDEX 150
