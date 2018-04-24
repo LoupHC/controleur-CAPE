@@ -55,7 +55,7 @@
 #include "Greenhouse_parameters.h"
 #include "GreenhouseLib.h"
 
-#define VERSION 101
+#define VERSION 102
 
 
 Greenhouse greenhouse(TIMEZONE, LATITUDE, LONGITUDE, TIMEPOINTS, ROLLUPS, STAGES, FANS, HEATERS);
@@ -140,8 +140,14 @@ void setup() {
   #endif
   //Temperature range
   greenhouseTemperature.setLimits(-180, 100);
-  //default value if probe doesnt reply back at first cycle
-  greenhouseTemperature.setValue(EMERGENCY_TEMP_REF);
+  //last recorded value if probe doesnt reply back at first cycle
+  if(EEPROM.read(1) == 111){
+    float emergencyTemp = EEPROM.read(2);
+    greenhouseTemperature.setValue(emergencyTemp);
+  }
+  else{
+    greenhouseTemperature.setValue(20);
+  }
   //start communication with temp probe
   #ifdef TEMP_DS18B20
     sensors.begin();
@@ -199,6 +205,7 @@ void setup() {
 //***************************************************
 
 void loop() {
+  Serial.println(greenhouseTemperature.value());
   //actual time
   getDateAndTime();
   //actual temperature

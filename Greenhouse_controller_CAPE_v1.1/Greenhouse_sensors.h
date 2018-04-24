@@ -89,6 +89,8 @@ void getGreenhouseTemp(){
     float temp = sensors.getTempCByIndex(0);
 
     if((temp <= -127.00)||(temp >= 85.00)){
+      EEPROM.update(1, 111);
+      EEPROM.update(2, (byte)greenhouseTemperature.value());
       greenhouseTemperature.setValue(greenhouseTemperature.value());
       sensorFailure = true;
       #ifdef ALARM_PIN
