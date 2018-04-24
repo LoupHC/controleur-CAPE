@@ -617,38 +617,48 @@ void temperaturesDisplay(){
     if(greenhouse.weather() == SUN){
       switch(writeLine){
         #if TIMEPOINTS >= 1
-          case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcd.print(T1.heatingTemp.value());lcd.print(F("-")); lcd.print(T1.coolingTemp.value());lcd.print(F(" R")); lcd.print(T1.ramping.value());break;
+          case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcd.print(T1.heatingTemp.value());lcd.print(F("-")); lcd.print(T1.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T1.ramping.value());break;
         #endif
         #if TIMEPOINTS >= 2
-          case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTemp.value());lcd.print(F("-")); lcd.print(T2.coolingTemp.value());lcd.print(F(" R")); lcd.print(T2.ramping.value());break;
+          case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTemp.value());lcd.print(F("-")); lcd.print(T2.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T2.ramping.value());break;
         #endif
         #if TIMEPOINTS >= 3
-          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTemp.value());lcd.print(F("-")); lcd.print(T3.coolingTemp.value());lcd.print(F(" R")); lcd.print(T3.ramping.value());break;
+          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTemp.value());lcd.print(F("-")); lcd.print(T3.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T3.ramping.value());break;
         #endif
         #if TIMEPOINTS >= 4
-          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());lcd.print(F(" R")); lcd.print(T4.ramping.value());break;
+          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T4.ramping.value());break;
         #endif
         #if TIMEPOINTS == 5
-          case 5: lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcd.print(T5.heatingTemp.value());lcd.print(F("-")); lcd.print(T5.coolingTemp.value());lcd.print(F(" R")); lcd.print(T5.ramping.value());break;
+          case 5: lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcd.print(T5.heatingTemp.value());lcd.print(F("-")); lcd.print(T5.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T5.ramping.value());break;
         #endif
       }
     }
     else if(greenhouse.weather() == CLOUD){
       switch(writeLine){
         #if TIMEPOINTS >= 1
-          case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcd.print(T1.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T1.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T1.ramping.value());break;
+          case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcd.print(T1.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T1.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T1.ramping.value());break;
         #endif
         #if TIMEPOINTS >= 2
-          case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T2.coolingTempCloud.value());lcd.print(F(" R")); lcd.print(T2.ramping.value());break;
+          case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T2.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);  lcd.print(T2.ramping.value());break;
         #endif
         #if TIMEPOINTS >= 3
-          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTemp.value());lcd.print(F("-")); lcd.print(T3.coolingTemp.value());lcd.print(F(" R")); lcd.print(T3.ramping.value());break;
+          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T3.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);  lcd.print(T3.ramping.value());break;
         #endif
         #if TIMEPOINTS >= 4
-          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());lcd.print(F(" R")); lcd.print(T4.ramping.value());break;
+          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T4.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);  lcd.print(T4.ramping.value());break;
         #endif
         #if TIMEPOINTS == 5
-          case 5: lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcd.print(T5.heatingTemp.value());lcd.print(F("-")); lcd.print(T5.coolingTemp.value());lcd.print(F(" R")); lcd.print(T5.ramping.value());break;
+          case 5: lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcd.print(T5.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T5.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);  lcd.print(T5.ramping.value());break;
         #endif
       }
     }
@@ -1709,34 +1719,34 @@ void menuSetParameter(){
       menu = MODE_DISPLAY;key = '8';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
-  else if(!strcmp(Data, T3HEATT)){
+  else if(!strcmp(Data, T4HEATT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T3 - HEAT TEMP-SUN", T3.coolingTemp.minimum(),T3.heatingTemp.value(),T3.coolingTemp.maximum());
+      confirmVariable("T4 - HEAT TEMP-SUN", T4.coolingTemp.minimum(),T4.heatingTemp.value(),T4.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-        T3.heatingTemp.setValue(fvariable);
+        T4.heatingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T3 - HEAT TEMP-CLOUD", T3.coolingTemp.minimum(),T3.heatingTempCloud.value(),T3.coolingTemp.maximum());
+      confirmVariable("T4 - HEAT TEMP-CLOUD", T4.coolingTemp.minimum(),T4.heatingTempCloud.value(),T4.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-        T3.heatingTempCloud.setValue(fvariable);
+        T4.heatingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
   }
-  else if(!strcmp(Data, T3COOLT)){
+  else if(!strcmp(Data, T4COOLT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T3 - COOL TEMP-SUN", T3.coolingTemp.minimum(),T3.coolingTemp.value(),T3.coolingTemp.maximum());
+      confirmVariable("T4 - COOL TEMP-SUN", T4.coolingTemp.minimum(),T4.coolingTemp.value(),T4.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-        T3.coolingTemp.setValue(fvariable);
+        T4.coolingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T3 - COOL TEMP-CLOUD", T3.coolingTemp.minimum(),T3.coolingTempCloud.value(),T3.coolingTemp.maximum());
+      confirmVariable("T4 - COOL TEMP-CLOUD", T4.coolingTemp.minimum(),T4.coolingTempCloud.value(),T4.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-        T3.coolingTempCloud.setValue(fvariable);
+        T4.coolingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }

@@ -147,7 +147,7 @@ At 17C, furnace will start.
 At 19C, furnace  stop.
 */
 
-#define COMPUTER_INTERFACE    //Uncomment this line if you rely only on this sheet for programming
+//#define COMPUTER_INTERFACE    //Uncomment this line if you rely only on this sheet for programming
 
 //************************************************************
 //*******************CONTROL PARAMETERS***********************
@@ -328,6 +328,12 @@ HEATER PARAMETERS - SYNTAX RULES:
 #define H2_MOD              -1
 
 //************************************************************************
+/*EMERGENCY TEMPERATURE REFERENC
+If temperature probe doesnt reply back at first cycle, default temperature value
+*/
+
+#define EMERGENCY_TEMP_REF    20.00
+
 /*ALARM
   Fire alarm (ALARM_PIN) when temperature get over a maximum or under a minimum
 */

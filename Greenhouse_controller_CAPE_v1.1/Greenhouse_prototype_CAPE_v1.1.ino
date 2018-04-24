@@ -138,6 +138,10 @@ void setup() {
   #ifdef KEYPAD_DISPLAY
     keypad.begin( makeKeymap(keys) );
   #endif
+  //Temperature range
+  greenhouseTemperature.setLimits(-180, 100);
+  //default value if probe doesnt reply back at first cycle
+  greenhouseTemperature.setValue(EMERGENCY_TEMP_REF);
   //start communication with temp probe
   #ifdef TEMP_DS18B20
     sensors.begin();

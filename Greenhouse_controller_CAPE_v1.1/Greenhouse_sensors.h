@@ -84,19 +84,24 @@ void getDateAndTime(){
 
 
 void getGreenhouseTemp(){
-  greenhouseTemperature.setLimits(-180, 100);
-
   #ifdef TEMP_DS18B20
     sensors.requestTemperatures();
     float temp = sensors.getTempCByIndex(0);
 
     if((temp <= -127.00)||(temp >= 85.00)){
-      temp = greenhouse.coolingTemp()+10;
-       greenhouseTemperature.setValue(temp);
+      greenhouseTemperature.setValue(greenhouseTemperature.value());
       sensorFailure = true;
+      #ifdef ALARM_PIN
+        greenhouse.alarmBlast();
+        delay(500);
+        greenhouse.stopAlarm();
+        delay(1000);
+      #endif
+      Serial.println("sensor fault");
     }
     else{
       greenhouseTemperature.setValue(temp);
+      greenhouseTemperature.updateLastValue();
       sensorFailure = false;
     }
   #endif

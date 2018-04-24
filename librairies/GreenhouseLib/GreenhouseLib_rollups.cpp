@@ -175,7 +175,6 @@ void Rollup::initStage(Stage stage, float modif, byte inc){
 }
 /*
 Open or close the rollups to specific increment, using a multiple cooling stages logic
-Adjust to an external target temperature (Mode MAN_TEMP)
 */
 void Rollup::routine(float targetTemp, float temp){
     checkTimings();
@@ -197,7 +196,9 @@ void Rollup::routine(float targetTemp, float temp){
     }
   debugPrints();
   }
-
+  /*
+  Same but with an external boolean condition that triggers an override
+  */
 void Rollup::routine(boolean condition, float targetTemp, float temp){
     checkTimings();
     if(_routine == true){

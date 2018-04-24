@@ -151,6 +151,7 @@ void Timepoint::EEPROMPut(){
   type.loadInEEPROM();
   mnMod.loadInEEPROM();
   hrMod.loadInEEPROM();
+  heatingTemp.loadInEEPROM();
   coolingTemp.loadInEEPROM();
   coolingTempCloud.loadInEEPROM();
   heatingTempCloud.loadInEEPROM();
