@@ -205,7 +205,7 @@ void setup() {
 //***************************************************
 
 void loop() {
-  Serial.println(greenhouseTemperature.value());
+  //Serial.println(greenhouseTemperature.value());
   //actual time
   getDateAndTime();
   //actual temperature
