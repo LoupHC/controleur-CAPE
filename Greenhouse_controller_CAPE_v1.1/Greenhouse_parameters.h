@@ -328,11 +328,6 @@ HEATER PARAMETERS - SYNTAX RULES:
 #define H2_MOD              -1
 
 //************************************************************************
-/*EMERGENCY TEMPERATURE REFERENC
-If temperature probe doesnt reply back at first cycle, default temperature value
-*/
-
-#define EMERGENCY_TEMP_REF    20.00
 
 /*ALARM
   Fire alarm (ALARM_PIN) when temperature get over a maximum or under a minimum
