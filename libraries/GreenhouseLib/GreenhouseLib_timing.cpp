@@ -134,7 +134,26 @@ void Timepoint::setTimepoint(short hourMod, short minutMod){
   mnMod.setValue(minutMod);
 
 }
+void Timepoint::updateTimepoint(){
 
+  if (type.value() == SR){
+		_time.setTime(sunRise[HOUR], sunRise[MINUT]);
+    _time.addTime(hrMod.value(), mnMod.value());
+		_hr = _time.hour();
+		_mn = _time.minut();
+	}
+	else if (type.value() == CLOCK){
+		_hr = hrMod.value();
+		_mn = mnMod.value();
+  }
+
+  else if (type.value() == SS){
+		_time.setTime(sunSet[HOUR], sunSet[MINUT]);
+    _time.addTime(hrMod.value(), mnMod.value());
+    _hr = _time.hour();
+		_mn = _time.minut();
+	}
+}
 unsigned short Timepoint::hr(){
   return _hr;
 }

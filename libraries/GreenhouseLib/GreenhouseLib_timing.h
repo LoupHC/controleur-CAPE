@@ -41,6 +41,7 @@ class Timepoint
 		void setParameters(byte type, short hour, short min, float heatingTemp, float coolingTemp, unsigned short ramping);
 		void setParameters(byte type, short hour, short min, float heatingTemp, float coolingTemp, float heatingTempCloud, float coolingTempCloud, unsigned short ramping);
 		void setTimepoint(short hour, short min);
+		void updateTimepoint();
     void EEPROMGet();
     void EEPROMPut();
 

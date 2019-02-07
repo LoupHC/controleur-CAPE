@@ -47,7 +47,16 @@ void Greenhouse::setNow(byte rightNow[6]){
       _rightNow[x] = rightNow[x];
   }
 
-    myLord.DST(_rightNow);
+  myLord.DST(_rightNow);
+
+  #ifdef DEBUG_SOLARCALC
+    if(_rightNow[2]!=rightNow[2]){
+		    Serial.println("Heure avancée");
+	  }
+	  else{
+		    Serial.println("Heure normale");
+	  }
+  #endif
 }
 
 void Greenhouse::fullRoutine(byte rightNow[6], float greenhouseTemperature){
@@ -132,6 +141,11 @@ void Greenhouse::setSunrise(){
   myLord.SunRise(_sunTime); ///On détermine l'heure du lever du soleil
   Timepoint::sunRise[HOUR] = (short)_sunTime[HOUR];
   Timepoint::sunRise[MINUT] = (short)_sunTime[MINUT];
+  for(int x = 0; x < _timepoints;x++){
+    if(timepoint[x].type.value() == SR){
+      timepoint[x].updateTimepoint();
+    }
+  }
 
   #ifdef DEBUG_SOLARCALC
     Serial.print("lever du soleil :");Serial.print(Timepoint::sunRise[HOUR]);  Serial.print(":");  Serial.println(Timepoint::sunRise[MINUT]);
@@ -147,6 +161,11 @@ void Greenhouse::setSunset(){
   myLord.SunSet(_sunTime); // Computes Sun Set. Prints:
   Timepoint::sunSet[HOUR] = (short)_sunTime[HOUR];
   Timepoint::sunSet[MINUT] = (short)_sunTime[MINUT];
+for(int x = 0; x < _timepoints;x++){
+  if(timepoint[x].type.value() == SS){
+    timepoint[x].updateTimepoint();
+  }
+}
   #ifdef DEBUG_SOLARCALC
     Serial.print("coucher du soleil :");  Serial.print(Timepoint::sunSet[HOUR]);  Serial.print(":");  Serial.println(Timepoint::sunSet[MINUT]);
     Serial.println("----");
