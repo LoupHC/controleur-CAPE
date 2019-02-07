@@ -319,6 +319,9 @@ void Rollup::startMove(short targetStage, short targetIncrement){
   _incrementMove = targetIncrement - (short)_incrementCounter;
   _stageMove = targetStage - _stage;
 
+  calibrateStages();
+  updateTimings();
+
   //If motor goes up, calculate for how much time
   if (_incrementMove > 0){
     _routineCycle = true;
@@ -602,7 +605,6 @@ void Rollup::setStages(byte stages){
 }
 
 void Rollup::checkTimings(){
-  checkStageSuccession();
   float upStep = (float)rotationUp.value()*1000/(float)_increments;
   float downStep = (float)rotationDown.value()*1000/(float)_increments;
   _upStep = upStep;
@@ -611,18 +613,40 @@ void Rollup::checkTimings(){
 }
 
 void Rollup::checkStageSuccession(){
-  if(_stage != _stages){
-    _upperStage = _stage+1;
-  }
-  else{
-    _upperStage = _stages;
-  }
-  if(_stage != 0){
-    _lowerStage = _stage-1;
-  }
-  else{
-    _lowerStage = 0;
-  }
+      if(_stage != _stages){
+        if(stage[_stage].target.value() != stage[_stage+1].target.value()){
+          _upperStage = _stage+1;
+        }
+        else if(stage[_stage].target.value() != stage[_stage+2].target.value()){
+          _upperStage = _stage+2;
+        }
+        else if(stage[_stage].target.value() != stage[_stage+3].target.value()){
+          _upperStage = _stage+3;
+        }
+        else{
+          _upperStage = _stages;
+        }
+      }
+      else{
+        _upperStage = _stages;
+    }
+    if(_stage != 0){
+      if(stage[_stage].target.value() != stage[_stage-1].target.value()){
+        _lowerStage = _stage-1;
+      }
+      else if(stage[_stage].target.value() != stage[_stage-2].target.value()){
+        _lowerStage = _stage-2;
+      }
+      else if(stage[_stage].target.value() != stage[_stage-3].target.value()){
+        _lowerStage = _stage-3;
+      }
+      else{
+        _lowerStage = 0;
+      }
+    }
+    else{
+      _lowerStage = 0;
+    }
 }
 
 void Rollup::setIncrementCounter(unsigned short increment){
