@@ -14,6 +14,8 @@
 
 //Real time clock
 #define CLOCK_DS3231
+//#define TEST_CLOCKF
+//#define TEST_CLOCKFF
 
 //Temerature pin
 #define TEMP_SENSOR          7 //connect this pin to the DS18B20 data line
@@ -52,6 +54,31 @@ DHT12 DHT;
 
 unsigned long counter = 1;
 
+int startMin = 0;
+int startHour = 0;
+int startDay = 1;
+int startMonth = 1;
+int startYear = 0;
+
+void testTime(){
+    if(startMin > 59){
+      startMin = 0;
+      startHour++;
+    }
+    if(startHour > 23){
+      startHour = 0;
+      startDay++;
+    }
+    if(startDay > 30){
+      startDay = 1;
+      startMonth++;
+    }
+    if(startMonth > 12){
+      startMonth = 1;
+      startYear++;
+    }
+}
+
 void getDateAndTime(){
 
   for(int x = 0; x < 6; x++){
@@ -67,7 +94,31 @@ void getDateAndTime(){
     rightNow[1].setValue(t.min);
     rightNow[0].setValue(t.sec);
   #endif
+  #ifdef TEST_CLOCKF
 
+    rightNow[0].setValue(0);
+    rightNow[1].setValue(startMin);
+    rightNow[2].setValue(startHour);
+    rightNow[3].setValue(startDay);
+    rightNow[4].setValue(startMonth);
+    rightNow[5].setValue(startYear);
+
+    startMin++;
+    testTime();
+
+  #endif
+    #ifdef TEST_CLOCKFF
+
+    rightNow[0].setValue(0);
+    rightNow[1].setValue(startMin);
+    rightNow[2].setValue(startHour);
+    rightNow[3].setValue(startDay);
+    rightNow[4].setValue(startMonth);
+    rightNow[5].setValue(startYear);
+
+    startDay++;
+    testTime();
+  #endif
 
   for(int x = 0; x < 6; x++){
     rightNowValue[x] = rightNow[x].value();
