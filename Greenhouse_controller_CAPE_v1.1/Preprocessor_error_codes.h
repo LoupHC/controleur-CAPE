@@ -106,98 +106,98 @@
 #endif
 
 //Timepoints
-#if (TP1_TYPE != SR && TP1_TYPE != CLOCK && TP1_TYPE != SS)
+#if (DIF_TYPE != SR && DIF_TYPE != CLOCK && DIF_TYPE != SS)
   #error Wrong timepoint type
 #endif
 
-#if (TP1_HOUR > 23 || TP1_HOUR < 0 && TP1_TYPE == CLOCK)
+#if (DIF_HR_MOD > 23 || DIF_HR_MOD < 0 && DIF_TYPE == CLOCK)
   #error Wrong timepoints hour value
-#elif(TP1_HOUR > 23 || TP1_HOUR < -23)
+#elif(DIF_HR_MOD > 23 || DIF_HR_MOD < -23)
   #error Wrong timepoints hour value
 #endif
 
-#if (TP1_MN_MOD > 59 || TP1_MN_MOD < 0 && TP1_TYPE == CLOCK)
+#if (DIF_MN_MOD > 59 || DIF_MN_MOD < 0 && DIF_TYPE == CLOCK)
   #error Wrong timepoints minut value
-#elif(TP1_MN_MOD > 59 || TP1_MN_MOD < -59)
+#elif(DIF_MN_MOD > 59 || DIF_MN_MOD < -59)
   #error Wrong timepoints minut value
 #endif
 
-#if (TP1_HEAT > 50 || TP1_HEAT < 0)
+#if (DIF_HEAT > 50 || DIF_HEAT < 0)
   #error Check your timepoints parameter : thats damn hot/cold
 #endif
-#if (TP1_COOL > 50 || TP1_HEAT < COOL)
+#if (DIF_COOL > 50 || DIF_HEAT < COOL)
   #error Check your timepoints parameter : thats damn hot/cold
 #endif
 
 
-#if (TP2_TYPE != SR && TP2_TYPE != CLOCK && TP2_TYPE != SS)
+#if (DAY_TYPE != SR && DAY_TYPE != CLOCK && DAY_TYPE != SS)
   #error Wrong timepoint type
 #endif
 
-#if (TP2_HOUR > 23 || TP2_HOUR < 0 && TP2_TYPE == CLOCK)
+#if (DAY_HR_MOD > 23 || DAY_HR_MOD < 0 && DAY_TYPE == CLOCK)
   #error Wrong timepoints hour value
-#elif(TP2_HOUR > 23 || TP2_HOUR < -23)
+#elif(DAY_HR_MOD > 23 || DAY_HR_MOD < -23)
   #error Wrong timepoints hour value
 #endif
 
-#if (TP2_MN_MOD > 59 || TP2_MN_MOD < 0 && TP2_TYPE == CLOCK)
+#if (DAY_MN_MOD > 59 || DAY_MN_MOD < 0 && DAY_TYPE == CLOCK)
   #error Wrong timepoints minut value
-#elif(TP2_MN_MOD > 59 || TP2_MN_MOD < -59)
+#elif(DAY_MN_MOD > 59 || DAY_MN_MOD < -59)
   #error Wrong timepoints minut value
 #endif
 
-#if (TP2_HEAT > 50 || TP2_HEAT < 0)
+#if (DAY_HEAT > 50 || DAY_HEAT < 0)
   #error Check your timepoints parameter : thats damn hot/cold
 #endif
-#if (TP2_COOL > 50 || TP2_HEAT < COOL)
+#if (DAY_COOL > 50 || DAY_HEAT < COOL)
   #error Check your timepoints parameter : thats damn hot/cold
 #endif
 
 
-#if (TP3_TYPE != SR && TP3_TYPE != CLOCK && TP3_TYPE != SS)
+#if (PREN_TYPE != SR && PREN_TYPE != CLOCK && PREN_TYPE != SS)
   #error Wrong timepoint type
 #endif
 
-#if (TP3_HOUR > 23 || TP3_HOUR < 0 && TP3_TYPE == CLOCK)
+#if (PREN_HR_MOD > 23 || PREN_HR_MOD < 0 && PREN_TYPE == CLOCK)
   #error Wrong timepoints hour value
-#elif(TP3_HOUR > 23 || TP3_HOUR < -23)
+#elif(PREN_HR_MOD > 23 || PREN_HR_MOD < -23)
   #error Wrong timepoints hour value
 #endif
 
-#if (TP3_MN_MOD > 59 || TP3_MN_MOD < 0 && TP3_TYPE == CLOCK)
+#if (PREN_MN_MOD > 59 || PREN_MN_MOD < 0 && PREN_TYPE == CLOCK)
   #error Wrong timepoints minut value
-#elif(TP3_MN_MOD > 59 || TP3_MN_MOD < -59)
+#elif(PREN_MN_MOD > 59 || PREN_MN_MOD < -59)
   #error Wrong timepoints minut value
 #endif
 
-#if (TP3_HEAT > 50 || TP3_HEAT < 0)
+#if (PREN_HEAT > 50 || PREN_HEAT < 0)
   #error Check your timepoints parameter : thats damn hot/cold
 #endif
-#if (TP3_COOL > 50 || TP3_HEAT < COOL)
+#if (PREN_COOL > 50 || PREN_HEAT < COOL)
   #error Check your timepoints parameter : thats damn hot/cold
 #endif
 
 
-#if (TP4_TYPE != SR && TP4_TYPE != CLOCK && TP4_TYPE != SS)
+#if (NIGHT_TYPE != SR && NIGHT_TYPE != CLOCK && NIGHT_TYPE != SS)
   #error Wrong timepoint type
 #endif
 
-#if (TP4_HOUR > 23 || TP4_HOUR < 0 && TP4_TYPE == CLOCK)
+#if (NIGHT_HR_MOD > 23 || NIGHT_HR_MOD < 0 && NIGHT_TYPE == CLOCK)
   #error Wrong timepoints hour value
-#elif(TP4_HOUR > 23 || TP4_HOUR < -23)
+#elif(NIGHT_HR_MOD > 23 || NIGHT_HR_MOD < -23)
   #error Wrong timepoints hour value
 #endif
 
-#if (TP4_MN_MOD > 59 || TP4_MN_MOD < 0 && TP4_TYPE == CLOCK)
+#if (NIGHT_MN_MOD > 59 || NIGHT_MN_MOD < 0 && NIGHT_TYPE == CLOCK)
   #error Wrong timepoints minut value
-#elif(TP4_MN_MOD > 59 || TP4_MN_MOD < -59)
+#elif(NIGHT_MN_MOD > 59 || NIGHT_MN_MOD < -59)
   #error Wrong timepoints minut value
 #endif
 
-#if (TP4_HEAT > 50 || TP4_HEAT < 0)
+#if (NIGHT_HEAT > 50 || NIGHT_HEAT < 0)
   #error Check your timepoints parameter : thats damn hot/cold
 #endif
-#if (TP4_COOL > 50 || TP4_HEAT < COOL)
+#if (NIGHT_COOL > 50 || NIGHT_HEAT < COOL)
   #error Check your timepoints parameter : thats damn hot/cold
 #endif
 
@@ -205,9 +205,9 @@
   #error Wrong timepoint type
 #endif
 
-#if (TP5_HOUR > 23 || TP5_HOUR < 0 && TP5_TYPE == CLOCK)
+#if (TP5_HR_MOD > 23 || TP5_HR_MOD < 0 && TP5_TYPE == CLOCK)
   #error Wrong timepoints hour value
-#elif(TP5_HOUR > 23 || TP5_HOUR < -23)
+#elif(TP5_HR_MOD > 23 || TP5_HR_MOD < -23)
   #error Wrong timepoints hour value
 #endif
 
