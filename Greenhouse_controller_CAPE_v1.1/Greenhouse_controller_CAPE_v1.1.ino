@@ -58,6 +58,9 @@
 #define VERSION 102
 
 
+#define TIMEPOINTS 4
+#define ONE_ROLLUP_AT_THE_TIME
+
 Greenhouse greenhouse(TIMEZONE, LATITUDE, LONGITUDE, TIMEPOINTS, ROLLUPS, STAGES, FANS, HEATERS);
 
 //********************POINTERS**************************
@@ -92,9 +95,6 @@ Greenhouse greenhouse(TIMEZONE, LATITUDE, LONGITUDE, TIMEPOINTS, ROLLUPS, STAGES
 #if TIMEPOINTS >= 4
   Timepoint &T4 = greenhouse.timepoint[3];
 #endif
-#if TIMEPOINTS == 5
-  Timepoint &T5 = greenhouse.timepoint[4];
-#endif
 
 //********************VARIABLES**************************
 
@@ -120,7 +120,7 @@ boolean EEPROMReset = false;
 //See "Greenhouse_interface.h" for LCD display functions
 #include "Greenhouse_interface.h"
 //********************ERRORS**************************
-#include "Preprocessor_error_codes.h"
+//#include "Preprocessor_error_codes.h"
 
 
 //***************************************************
@@ -148,6 +148,8 @@ void setup() {
   else{
     greenhouseTemperature.setValue(20);
   }
+  deshum = EEPROM.read(3);
+
   //start communication with temp probe
   #ifdef TEMP_DS18B20
     sensors.begin();
@@ -174,11 +176,11 @@ void setup() {
     greenhouse.setAlarmMinTemp(ALARM_MIN_TEMP);
   #endif
   // change RTC settings
-  #ifdef RTC_TIME_SET
-    rtc.setTime(HOUR_SET, MINUT_SET, SECOND_SET);
+  #if defined(SET_TIME) && defined(CLOCK_DS3231)
+    rtc.setTime(HR, MIN,0);
   #endif
-  #ifdef RTC_DATE_SET
-    rtc.setDate(DAY_SET, MONTH_SET, YEAR_SET);
+  #if defined(SET_TIME) && defined(CLOCK_DS3231)
+    rtc.setDate(DAY, MONTH, YEAR);
   #endif
   //get sensors values
   getDateAndTime();
@@ -216,39 +218,51 @@ void loop() {
   lcdDisplay();
   //timepoint and target temperatures definitions, outputs routine
   greenhouse.fullRoutine(rightNowValue, &coolingTemperature, &heatingTemperature);
-  #if ROLLUPS >= 1 && defined(ROLLUP1_DESHUM)
-    R1.routine(rollup1Deshum, coolingTemperature, greenhouseTemperature.value());
-  #elif ROLLUPS >= 1 && !defined(ROLLUP1_DESHUM)
-    R1.routine(coolingTemperature, greenhouseTemperature.value());
+
+  #if ROLLUPS == 2 && defined(ONE_ROLLUP_AT_THE_TIME)
+    if(!R2.isMoving()){
+  #endif
+    #if ROLLUPS >= 1 && defined(ROLLUP1_DESHUM)
+      R1.routine(rollup1Deshum, coolingTemperature, greenhouseTemperature.value());
+    #elif ROLLUPS >= 1 && !defined(ROLLUP1_DESHUM)
+      R1.routine(coolingTemperature, greenhouseTemperature.value());
+    #endif  
+  #if ROLLUPS == 2 && defined(ONE_ROLLUP_AT_THE_TIME)
+    }
   #endif
 
-  #if ROLLUPS == 2 && defined(ROLLUP1_DESHUM)
-    R2.routine(rollup2Deshum, coolingTemperature, greenhouseTemperature.value());
-  #elif ROLLUPS == 2 && !defined(ROLLUP1_DESHUM)
-    R2.routine(coolingTemperature, greenhouseTemperature.value());
+
+  #if ROLLUPS == 2 && defined(ONE_ROLLUP_AT_THE_TIME)
+    if(!R1.isMoving()){
+  #endif
+    #if ROLLUPS == 2 && defined(ROLLUP2_DESHUM)
+      R2.routine(rollup2Deshum, coolingTemperature, greenhouseTemperature.value());
+    #elif ROLLUPS == 2 && !defined(ROLLUP2_DESHUM)
+      R2.routine(coolingTemperature, greenhouseTemperature.value());
+    #endif
+  #if ROLLUPS == 2 && defined(ONE_ROLLUP_AT_THE_TIME)
+    }
   #endif
 
   #if FANS >= 1 && defined(FAN1_DESHUM)
     F1.routine(fan1Deshum, coolingTemperature, greenhouseTemperature.value());
-  #elif FANS >= 1 && !defined(ROLLUP1_DESHUM)
+  #elif FANS >= 1 && !defined(FAN1_DESHUM)
     F1.routine(coolingTemperature, greenhouseTemperature.value());
-
   #endif
-  #if FANS == 2 && defined(FAN2_DESHUM)
-    F2.routine(fan2Deshum, coolingTemperature, greenhouseTemperature.value());
-  #elif FANS == 2 && !defined(ROLLUP1_DESHUM)
+  #if FANS == 2
     F2.routine(coolingTemperature, greenhouseTemperature.value());
   #endif
 
   #if HEATERS >= 1 && defined(HEATER1_DESHUM)
     H1.routine(heater1Deshum, heatingTemperature, greenhouseTemperature.value());
-  #elif HEATERS >= 2 && !defined(ROLLUP1_DESHUM)
-    H1.routine(coolingTemperature, greenhouseTemperature.value());
+  #elif HEATERS >= 1 && !defined(HEATER1_DESHUM)
+    H1.routine(heatingTemperature, greenhouseTemperature.value());
   #endif
 
   #if HEATERS == 2
     H2.routine(heatingTemperature, greenhouseTemperature.value());
   #endif
+  
     greenhouse.checkAlarm(greenhouseTemperature.value());
   #if defined(R1_RECALIBRATE) && ROLLUPS >= 1
     recalibrateR1();
@@ -271,8 +285,10 @@ void loadParameters(){
 
     if(EEPROM[0] != VERSION){
       EEPROMReset = true;
-      rtc.setTime(HOUR_SET, MINUT_SET, SECOND_SET);
-      rtc.setDate(DAY_SET, MONTH_SET, YEAR_SET);
+      #ifdef CLOCK_DS3231
+        rtc.setTime(HR, MIN, 0);
+        rtc.setDate(DAY, MONTH, YEAR);
+      #endif
     }
     #ifdef COMPUTER_INTERFACE
       EEPROMReset = true;
@@ -304,8 +320,8 @@ void loadParameters(){
       R1.setParameters(R1_HYST, R1_ROTUP, R1_ROTDOWN, R1_PAUSE);
     #endif
     #if ROLLUPS >= 1 && STAGES >= 1
-      R1.stage[0].mod.setValue(R1_S0_MOD);
-      R1.stage[0].target.setValue(R1_S0_TARGET);
+      R1.stage[0].mod.setValue(0);
+      R1.stage[0].target.setValue(0);
       R1.stage[1].mod.setValue(R1_S1_MOD);
       R1.stage[1].target.setValue(R1_S1_TARGET);
     #endif
@@ -326,22 +342,22 @@ void loadParameters(){
       R2.setParameters(R2_HYST, R2_ROTUP, R2_ROTDOWN, R2_PAUSE);
     #endif
     #if ROLLUPS == 2 && STAGES >= 1
-      R2.stage[0].mod.setValue(R1_S0_MOD);
-      R2.stage[0].target.setValue(R1_S0_TARGET);
-      R2.stage[1].mod.setValue(R1_S1_MOD);
-      R2.stage[1].target.setValue(R1_S1_TARGET);
+      R2.stage[0].mod.setValue(0);
+      R2.stage[0].target.setValue(0);
+      R2.stage[1].mod.setValue(R2_S1_MOD);
+      R2.stage[1].target.setValue(R2_S1_TARGET);
     #endif
     #if ROLLUPS == 2 && STAGES >= 2
-      R2.stage[2].mod.setValue(R1_S2_MOD);
-      R2.stage[2].target.setValue(R1_S2_TARGET);
+      R2.stage[2].mod.setValue(R2_S2_MOD);
+      R2.stage[2].target.setValue(R2_S2_TARGET);
     #endif
     #if ROLLUPS == 2 && STAGES >= 3
-      R2.stage[3].mod.setValue(R1_S3_MOD);
-      R2.stage[3].target.setValue(R1_S3_TARGET);
+      R2.stage[3].mod.setValue(R2_S3_MOD);
+      R2.stage[3].target.setValue(R2_S3_TARGET);
     #endif
     #if ROLLUPS == 2 && STAGES >= 4
-      R2.stage[4].mod.setValue(R1_S4_MOD);
-      R2.stage[4].target.setValue(R1_S4_TARGET);
+      R2.stage[4].mod.setValue(R2_S4_MOD);
+      R2.stage[4].target.setValue(R2_S4_TARGET);
     #endif
     #if FANS >= 1
       F1.setParameters(F1_MOD, F1_HYST);
@@ -355,20 +371,28 @@ void loadParameters(){
     #if HEATERS == 2
       H2.setParameters(H2_MOD, H2_HYST);
     #endif
-    #if TIMEPOINTS >= 1
-      T1.setParameters(TP1_TYPE, TP1_HOUR, TP1_MN_MOD, TP1_HEAT_SUN, TP1_COOL_SUN, TP1_HEAT_CLOUD, TP1_COOL_CLOUD, TP1_RAMP);
+    
+    #if TIMEPOINTS >= 1 && defined(ENABLE_DIF)
+      T1.setParameters(DIF_TYPE, DIF_HR_MOD, DIF_MN_MOD, DIF_HEAT_SUN, DIF_COOL_SUN, DIF_HEAT_CLOUD, DIF_COOL_CLOUD, DIF_RAMP);
     #endif
+    #if TIMEPOINTS >= 1 && !defined(ENABLE_DIF)
+      T1.setParameters(DAY_TYPE, DAY_HR_MOD, DAY_MN_MOD, DAY_HEAT_SUN, DAY_COOL_SUN, DAY_HEAT_CLOUD, DAY_COOL_CLOUD, DAY_RAMP);
+    #endif
+    
     #if TIMEPOINTS >= 2
-      T2.setParameters(TP2_TYPE, TP2_HOUR, TP2_MN_MOD, TP2_HEAT_SUN, TP2_COOL_SUN, TP2_HEAT_CLOUD, TP2_COOL_CLOUD, TP2_RAMP);
+      T2.setParameters(DAY_TYPE, DAY_HR_MOD, DAY_MN_MOD, DAY_HEAT_SUN, DAY_COOL_SUN, DAY_HEAT_CLOUD, DAY_COOL_CLOUD, DAY_RAMP);
     #endif
-    #if TIMEPOINTS >= 3
-      T3.setParameters(TP3_TYPE, TP3_HOUR, TP3_MN_MOD, TP3_HEAT_SUN, TP3_COOL_SUN, TP3_HEAT_CLOUD, TP3_COOL_CLOUD, TP3_RAMP);
+    
+    #if TIMEPOINTS >= 3 && defined(ENABLE_PRENIGHT)
+      T3.setParameters(PREN_TYPE, PREN_HR_MOD, PREN_MN_MOD, PREN_HEAT_SUN, PREN_COOL_SUN, PREN_HEAT_CLOUD, PREN_COOL_CLOUD, PREN_RAMP);
     #endif
+    #if TIMEPOINTS >= 1 && !defined(ENABLE_PRENIGHT)
+      T3.setParameters(NIGHT_TYPE, NIGHT_HR_MOD, NIGHT_MN_MOD, NIGHT_HEAT_SUN, NIGHT_COOL_SUN, NIGHT_HEAT_CLOUD, NIGHT_COOL_CLOUD, NIGHT_RAMP);
+    #endif
+
+    
     #if TIMEPOINTS >= 4
-      T4.setParameters(TP4_TYPE, TP4_HOUR, TP4_MN_MOD, TP4_HEAT_SUN, TP4_COOL_SUN, TP4_HEAT_CLOUD, TP4_COOL_CLOUD, TP4_RAMP);
-    #endif
-    #if TIMEPOINTS == 5
-      T5.setParameters(TP5_TYPE, TP5_HOUR, TP5_MN_MOD, TP5_HEAT_SUN, TP5_COOL_SUN, TP5_HEAT_CLOUD, TP5_COOL_CLOUD, TP5_RAMP);
+      T4.setParameters(NIGHT_TYPE, NIGHT_HR_MOD, NIGHT_MN_MOD, NIGHT_HEAT_SUN, NIGHT_COOL_SUN, NIGHT_HEAT_CLOUD, NIGHT_COOL_CLOUD, NIGHT_RAMP);
     #endif
 
 
@@ -405,9 +429,6 @@ void loadParameters(){
       #endif
       #if TIMEPOINTS >= 4
         T4.EEPROMGet();
-      #endif
-      #if TIMEPOINTS == 5
-        T5.EEPROMGet();
       #endif
 
     }
