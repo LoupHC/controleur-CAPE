@@ -307,7 +307,19 @@ void lcdPrintTarget(){
 
 void lcdPrintTime(byte _row){
     lcd.setCursor(0,_row); lcdPrintDigits(greenhouse.rightNow(2)); lcd.print(F(":")); lcdPrintDigits(greenhouse.rightNow(1));lcd.print(F(":")); lcdPrintDigits(greenhouse.rightNow(0)); // lcd.print(F(" |")); lcdPrintDigits(greenhouse.rightNow(3)); lcd.print(F("/")); lcdPrintDigits(greenhouse.rightNow(4)); lcd.print(F("/")); lcdPrintDigits(2000+greenhouse.rightNow(5));
-    lcd.setCursor(9,_row); lcd.print(F("|(TIMEP: ")); lcd.print(greenhouse.nowTimepoint()); lcd.print(F(") "));
+    lcd.setCursor(9,_row); 
+    if(greenhouse.nowTimepoint() == 1){
+      lcd.print(F("|     (DIF)"));
+    } 
+    else if(greenhouse.nowTimepoint() == 2){
+      lcd.print(F("|     (DAY)"));
+    } 
+    else if(greenhouse.nowTimepoint() == 3){
+      lcd.print(F("|(PRENIGHT)"));
+    } 
+    else if(greenhouse.nowTimepoint() == 4){
+      lcd.print(F("|   (NIGHT)"));
+    }
 }
 
 void lcdPrintOutputs(){
@@ -348,10 +360,7 @@ void homeDisplay(){
     firstPrint = false;
   }
 
-  if(greenhouseTemperature.valueHasChanged()){
-    lcdPrintTemp(0);
-    greenhouseTemperature.updateLastValue();
-  }
+  lcdPrintTemp(0);
   for(int x = 0; x < 6; x++){
     if (rightNow[x].valueHasChanged()){
       lcdPrintTime(1);
@@ -501,17 +510,31 @@ void heaterDisplay(Heater heater){
 }
 
 void timepointsDisplay(){
-  printHeader("TIMEPOINTS - TIME",TIMEPOINTS);
+  #if defined(ENABLE_DIF) && defined(ENABLE_PRENIGHT)
+    int timepoints = TIMEPOINTS;
+  #elif (defined(ENABLE_DIF)&&!defined(ENABLE_PRENIGHT))||(!defined(ENABLE_DIF)&& defined(ENABLE_PRENIGHT))
+    int timepoints = TIMEPOINTS-1;
+  #elif !defined(ENABLE_DIF)&& !defined(RENABLE_PRENIGHT)
+    int timepoints = TIMEPOINTS-2;
+  #endif
+  printHeader("TIMEPOINTS - TIME",timepoints);  
+
   if(firstPrint == true){
     firstPrint = false;
   }
-  adjustLine();
-
+  if (line > maxLine - 3){
+    line = maxLine-3;
+  }
+  if(line<0){
+    line = 0;
+  }
   //print content
-  int maxLines = TIMEPOINTS+1;
+  int maxLines = timepoints+1;
+  
   if(maxLines > 4){
     maxLines = 4;
   }
+  
   for(int x = 1; x < maxLines; x++){
     int writeLine = x+line;
     if (writeLine > maxLine){
@@ -520,149 +543,206 @@ void timepointsDisplay(){
 
     switch(writeLine){
       case 1:
-      #if TIMEPOINTS > 1
-        lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());lcd.print(F("-")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());
-      #endif
-      #if TIMEPOINTS >1
-      switch (T1.type.value()){
-        case 0: lcd.print("(SR)");break;
-        case 1: lcd.print("(CL)");break;
-        case 2: lcd.print("(SS)");break;
-      }
-      #endif
+        #if defined(ENABLE_DIF)
+          lcd.setCursor(0,x);lcd.print(F("DIF: ")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());lcd.print(F("-")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());
+          switch (T1.type.value()){
+            case 0: lcd.print("(SR)");break;
+            case 1: lcd.print("(CL)");break;
+            case 2: lcd.print("(SS)");break;
+          }
+        #elif !defined(ENABLE_DIF)
+          lcd.setCursor(0,x);lcd.print(F("DAY: ")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());lcd.print(F("-")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());
+            switch (T2.type.value()){
+              case 0: lcd.print("(SR)");break;
+              case 1: lcd.print("(CL)");break;
+              case 2: lcd.print("(SS)");break;
+            }
+        #endif
       break;
+      
       case 2:
-      #if TIMEPOINTS == 2
-        lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
-      #elif TIMEPOINTS >2
-        lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());lcd.print(F("-")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());
-      #endif
-      #if TIMEPOINTS >=2
-      switch (T2.type.value()){
-        case 0: lcd.print("(SR)");break;
-        case 1: lcd.print("(CL)");break;
-        case 2: lcd.print("(SS)");break;
-      }
-      #endif
+        #if defined(ENABLE_DIF)
+          lcd.setCursor(0,x);lcd.print(F("DAY: ")); lcdPrintDigits(T2.hr());lcd.print(F(":"));lcdPrintDigits(T2.mn());lcd.print(F("-")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());
+          switch (T2.type.value()){
+            case 0: lcd.print("(SR)");break;
+            case 1: lcd.print("(CL)");break;
+            case 2: lcd.print("(SS)");break;
+          }
+        #elif !defined(ENABLE_DIF)&&defined(ENABLE_PRENIGHT)
+          lcd.setCursor(0,x);lcd.print(F("PRE: ")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());lcd.print(F("-")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());
+          switch (T3.type.value()){
+            case 0: lcd.print("(SR)");break;
+            case 1: lcd.print("(CL)");break;
+            case 2: lcd.print("(SS)");break;
+          }
+        #else
+          lcd.setCursor(0,x);lcd.print(F("NIG: ")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
+          switch (T4.type.value()){
+            case 0: lcd.print("(SR)");break;
+            case 1: lcd.print("(CL)");break;
+            case 2: lcd.print("(SS)");break;
+          }
+        #endif
       break;
+      
       case 3:
-      #if TIMEPOINTS ==3
-      lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
-      #elif TIMEPOINTS > 3
-      lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());lcd.print(F("-")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());
-      #endif
-      #if TIMEPOINTS >=3
-      switch (T3.type.value()){
-        case 0: lcd.print("(SR)");break;
-        case 1: lcd.print("(CL)");break;
-        case 2: lcd.print("(SS)");break;
-      }
-      #endif
+        #if defined(ENABLE_PRENIGHT)&& defined(ENABLE_DIF)
+        lcd.setCursor(0,x);lcd.print(F("PRE: ")); lcdPrintDigits(T3.hr());lcd.print(F(":"));lcdPrintDigits(T3.mn());lcd.print(F("-")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());
+        switch (T3.type.value()){
+          case 0: lcd.print("(SR)");break;
+          case 1: lcd.print("(CL)");break;
+          case 2: lcd.print("(SS)");break;
+        }
+        #elif (defined(ENABLE_DIF)&&!defined(ENABLE_PRENIGHT))||(!defined(ENABLE_DIF)&& defined(ENABLE_PRENIGHT))
+        lcd.setCursor(0,x);lcd.print(F("NIG: ")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
+        switch (T4.type.value()){
+          case 0: lcd.print("(SR)");break;
+          case 1: lcd.print("(CL)");break;
+          case 2: lcd.print("(SS)");break;
+        }
+        #else
+        #endif 
       break;
       case 4:
-      #if TIMEPOINTS ==4
-      lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
-      #endif
-      #if TIMEPOINTS >4
-      lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());lcd.print(F("-")); lcdPrintDigits(T5.hr());lcd.print(F(":"));lcdPrintDigits(T5.mn());
-      #endif
-      #if TIMEPOINTS >=4
-      switch (T4.type.value()){
-        case 0: lcd.print("(SR)");break;
-        case 1: lcd.print("(CL)");break;
-        case 2: lcd.print("(SS)");break;
-      }
-      #endif
-      break;
-      case 5:
-      #if TIMEPOINTS ==5
-      lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcdPrintDigits(T5.hr());lcd.print(F(":"));lcdPrintDigits(T5.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
-      #endif
-      #if TIMEPOINTS ==5
-      switch (T5.type.value()){
-        case 0: lcd.print("(SR)");break;
-        case 1: lcd.print("(CL)");break;
-        case 2: lcd.print("(SS)");break;
-      }
-      #endif
+        #if defined(ENABLE_DIF) && defined(ENABLE_PRENIGHT)
+        lcd.setCursor(0,x);lcd.print(F("NIG: ")); lcdPrintDigits(T4.hr());lcd.print(F(":"));lcdPrintDigits(T4.mn());lcd.print(F("-")); lcdPrintDigits(T1.hr());lcd.print(F(":"));lcdPrintDigits(T1.mn());
+        switch (T4.type.value()){
+          case 0: lcd.print("(SR)");break;
+          case 1: lcd.print("(CL)");break;
+          case 2: lcd.print("(SS)");break;
+        }
+        #endif
       break;
    }
   }
 }
 
 void temperaturesDisplay(){
-
+  #if defined(ENABLE_DIF) && defined(ENABLE_PRENIGHT)
+    int timepoints = TIMEPOINTS;
+  #elif (defined(ENABLE_DIF)&&!defined(ENABLE_PRENIGHT))||(!defined(ENABLE_DIF)&& defined(ENABLE_PRENIGHT))
+    int timepoints = TIMEPOINTS-1;
+  #elif !defined(ENABLE_DIF)&& !defined(RENABLE_PRENIGHT)
+    int timepoints = TIMEPOINTS-2;
+  #endif
   if(greenhouse.weather() == SUN){
-    printHeader("TIMEP - TEMP(SUN)",TIMEPOINTS);
+    printHeader("TIMEP - TEMP(SUN)",timepoints);
   }
   else if(greenhouse.weather() == CLOUD){
-    printHeader("TIMEP - TEMP(CLOUD)",TIMEPOINTS);
+    printHeader("TIMEP - TEMP(CLOUD)",timepoints);
   }
   if(firstPrint == true){
     firstPrint = false;
   }
-
-  adjustLine();
-
+  
+  if (line > maxLine - 3){
+    line = maxLine-3;
+  }
+  if(line<0){
+    line = 0;
+  }
   //print content
-  int maxLines = TIMEPOINTS+1;
+  int maxLines = timepoints+1;
+  
   if(maxLines > 4){
     maxLines = 4;
   }
+  
   for(int x = 1; x < maxLines; x++){
     int writeLine = x+line;
     if (writeLine > maxLine){
       writeLine = maxLine;
     }
-    if(greenhouse.weather() == SUN){
-      switch(writeLine){
-        #if TIMEPOINTS >= 1
-          case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcd.print(T1.heatingTemp.value());lcd.print(F("-")); lcd.print(T1.coolingTemp.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T1.ramping.value());break;
+    
+  if(greenhouse.weather() == SUN){
+    switch(writeLine){
+      case 1:
+        #if defined(ENABLE_DIF)
+            lcd.setCursor(0,x);lcd.print(F("DIF: ")); lcd.print(T1.heatingTemp.value());lcd.print(F("-")); lcd.print(T1.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T1.ramping.value());
+        #elif !defined(ENABLE_DIF)
+            lcd.setCursor(0,x);lcd.print(F("DAY: ")); lcd.print(T2.heatingTemp.value());lcd.print(F("-")); lcd.print(T2.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T2.ramping.value());
         #endif
-        #if TIMEPOINTS >= 2
-          case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTemp.value());lcd.print(F("-")); lcd.print(T2.coolingTemp.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T2.ramping.value());break;
+      break;
+      
+      case 2:
+        #if defined(ENABLE_DIF)
+            lcd.setCursor(0,x);lcd.print(F("DAY: ")); lcd.print(T2.heatingTemp.value());lcd.print(F("-")); lcd.print(T2.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T2.ramping.value());
+        #elif !defined(ENABLE_DIF)&&defined(ENABLE_PRENIGHT)
+            lcd.setCursor(0,x);lcd.print(F("PRE: ")); lcd.print(T3.heatingTemp.value());lcd.print(F("-")); lcd.print(T3.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T3.ramping.value());
+        #else
+            lcd.setCursor(0,x);lcd.print(F("NIG: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T4.ramping.value());
         #endif
-        #if TIMEPOINTS >= 3
-          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTemp.value());lcd.print(F("-")); lcd.print(T3.coolingTemp.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T3.ramping.value());break;
+      break;
+      
+      case 3:
+        #if defined(ENABLE_PRENIGHT)&& defined(ENABLE_DIF)
+            lcd.setCursor(0,x);lcd.print(F("PRE: ")); lcd.print(T3.heatingTemp.value());lcd.print(F("-")); lcd.print(T3.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T3.ramping.value());
+        #elif (defined(ENABLE_DIF)&&!defined(ENABLE_PRENIGHT))||(!defined(ENABLE_DIF)&& defined(ENABLE_PRENIGHT))
+            lcd.setCursor(0,x);lcd.print(F("NIG: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T4.ramping.value());
+        #else
+        #endif 
+      break;
+      case 4:
+        #if defined(ENABLE_DIF) && defined(ENABLE_PRENIGHT)
+
+            lcd.setCursor(0,x);lcd.print(F("NIG: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T4.ramping.value());
         #endif
-        #if TIMEPOINTS >= 4
-          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTemp.value());lcd.print(F("-")); lcd.print(T4.coolingTemp.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T4.ramping.value());break;
-        #endif
-        #if TIMEPOINTS == 5
-          case 5: lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcd.print(T5.heatingTemp.value());lcd.print(F("-")); lcd.print(T5.coolingTemp.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T5.ramping.value());break;
-        #endif
-      }
-    }
-    else if(greenhouse.weather() == CLOUD){
-      switch(writeLine){
-        #if TIMEPOINTS >= 1
-          case 1: lcd.setCursor(0,x);lcd.print(F("TP1: ")); lcd.print(T1.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T1.coolingTempCloud.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T1.ramping.value());break;
-        #endif
-        #if TIMEPOINTS >= 2
-          case 2: lcd.setCursor(0,x);lcd.print(F("TP2: ")); lcd.print(T2.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T2.coolingTempCloud.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);  lcd.print(T2.ramping.value());break;
-        #endif
-        #if TIMEPOINTS >= 3
-          case 3: lcd.setCursor(0,x);lcd.print(F("TP3: ")); lcd.print(T3.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T3.coolingTempCloud.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);  lcd.print(T3.ramping.value());break;
-        #endif
-        #if TIMEPOINTS >= 4
-          case 4: lcd.setCursor(0,x);lcd.print(F("TP4: ")); lcd.print(T4.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T4.coolingTempCloud.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);  lcd.print(T4.ramping.value());break;
-        #endif
-        #if TIMEPOINTS == 5
-          case 5: lcd.setCursor(0,x);lcd.print(F("TP5: ")); lcd.print(T5.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T5.coolingTempCloud.value());
-            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);  lcd.print(T5.ramping.value());break;
-        #endif
-      }
-    }
+      break;
+   }
   }
+  if(greenhouse.weather() == CLOUD){
+    switch(writeLine){
+      case 1:
+        #if defined(ENABLE_DIF)
+            lcd.setCursor(0,x);lcd.print(F("DIF: ")); lcd.print(T1.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T1.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T1.ramping.value());
+        #elif !defined(ENABLE_DIF)
+            lcd.setCursor(0,x);lcd.print(F("DAY: ")); lcd.print(T2.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T2.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T2.ramping.value());
+        #endif
+      break;
+      
+      case 2:
+        #if defined(ENABLE_DIF)
+            lcd.setCursor(0,x);lcd.print(F("DAY: ")); lcd.print(T2.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T2.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x);lcd.print(T2.ramping.value());
+        #elif !defined(ENABLE_DIF)&&defined(ENABLE_PRENIGHT)
+            lcd.setCursor(0,x);lcd.print(F("PRE: ")); lcd.print(T3.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T3.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T3.ramping.value());
+        #else
+            lcd.setCursor(0,x);lcd.print(F("NIG: ")); lcd.print(T4.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T4.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T4.ramping.value());
+        #endif
+      break;
+      
+      case 3:
+        #if defined(ENABLE_PRENIGHT)&& defined(ENABLE_DIF)
+            lcd.setCursor(0,x);lcd.print(F("PRE: ")); lcd.print(T3.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T3.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T3.ramping.value());
+        #elif (defined(ENABLE_DIF)&&!defined(ENABLE_PRENIGHT))||(!defined(ENABLE_DIF)&& defined(ENABLE_PRENIGHT))
+            lcd.setCursor(0,x);lcd.print(F("NIG: ")); lcd.print(T4.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T4.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T4.ramping.value());
+        #else
+        #endif 
+      break;
+      case 4:
+        #if defined(ENABLE_DIF) && defined(ENABLE_PRENIGHT)
+
+            lcd.setCursor(0,x);lcd.print(F("NIG: ")); lcd.print(T4.heatingTempCloud.value());lcd.print(F("-")); lcd.print(T4.coolingTempCloud.value());
+            lcd.setCursor(16,x);lcd.print(F(" R  ")); lcd.setCursor(18,x); lcd.print(T4.ramping.value());
+        #endif
+      break;
+   }
+  }
+ }
 }
 void geoDisplay(){
 
@@ -789,9 +869,11 @@ void menuAction(){
           if(confirm == true){
             if(deshum == true){
               deshum = false;
+              EEPROM.write(3,false);
             }
             else if (deshum == false){
               deshum = true;
+              EEPROM.write(3,true);
             }
           }
         break;
@@ -834,7 +916,7 @@ void menuProgram(){
 }
 
 void confirmVariable(String variableName, float min, float value, float max){
-  fvariable = value+((float)line*0.10);
+  fvariable = value+((float)line*0.50);
   if(fvariable > max){
     fvariable = max;
     line -= 1;
@@ -847,15 +929,11 @@ void confirmVariable(String variableName, float min, float value, float max){
   lcd.setCursor(0,1);
   lcd.print(variableName);
   lcd.setCursor(0,2);
-  lcd.print("[min] [value] [max]");
+  lcd.print("Press *# to scroll  ");
   lcd.setCursor(0,3);
-  lcd.print("[");
-  lcd.print(min);
-  lcd.print("][");
+  lcd.print("      [");
   lcd.print(fvariable);
-  lcd.print("][");
-  lcd.print(max);
-  lcd.print("]");
+  lcd.print("]   ");
 
 
 }
@@ -875,15 +953,11 @@ void confirmVariable(String variableName, unsigned short min, unsigned short val
   lcd.setCursor(0,1);
   lcd.print(variableName);
   lcd.setCursor(0,2);
-  lcd.print(" [min][value][max] ");
-  lcd.setCursor(3,3);
-  lcd.print("[");
-  lcd.print(min);
-  lcd.print("] [");
+  lcd.print("Press *# to scroll  ");
+  lcd.setCursor(0,3);
+  lcd.print("        [");
   lcd.print(usvariable);
-  lcd.print("] [");
-  lcd.print(max);
-  lcd.print("]");
+  lcd.print("]     ");
 }
 void confirmVariable(String variableName, short min, short value, short max){
   svariable = value + line;
@@ -899,15 +973,11 @@ void confirmVariable(String variableName, short min, short value, short max){
   lcd.setCursor(0,1);
   lcd.print(variableName);
   lcd.setCursor(0,2);
-  lcd.print(" [min][value][max] ");
-  lcd.setCursor(3,3);
-  lcd.print("[");
-  lcd.print(min);
-  lcd.print("] [");
+  lcd.print("Press *# to scroll  ");
+  lcd.setCursor(0,3);
+  lcd.print("        [");
   lcd.print(svariable);
-  lcd.print("] [");
-  lcd.print(max);
-  lcd.print("]");
+  lcd.print("]     ");
 }
 void confirmType(String variableName, byte typeValue){
   short type = (short)typeValue + line;
@@ -924,8 +994,10 @@ void confirmType(String variableName, byte typeValue){
   lcd.noBlink();
   lcd.setCursor(0,1);
   lcd.print(variableName);
-  lcd.setCursor(7,3);
-  lcd.print("[");
+  lcd.setCursor(0,2);
+  lcd.print("Press *# to scroll  ");
+  lcd.setCursor(0,3);
+  lcd.print("       [");
   switch (typeSet){
     case 0: lcd.print("SR");break;
     case 1: lcd.print("CLOCK");break;
@@ -1435,9 +1507,9 @@ void menuSetParameter(){
     }
   }
 #endif
-#if TIMEPOINTS >= 1
+#ifdef ENABLE_DIF
   else if(!strcmp(Data, T1TYPE)){
-    confirmType("     T1 - TYPE",T1.type.value());
+    confirmType("     DIF - TYPE",T1.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
         Data[x] = T1HOUR[x];
@@ -1448,10 +1520,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T1HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T1 - HOUR", 0,T1.hrMod.value(),23);
+      confirmVariable("     DIF - HOUR", 0,T1.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T1 - HOUR", -23,T1.hrMod.value(),23);
+      confirmVariable("     DIF - HOUR", -23,T1.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
@@ -1464,10 +1536,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T1MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T1 - MINUTS", 0,T1.mnMod.value(),59);
+      confirmVariable("    DIF - MINUTS", 0,T1.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T1 - MINUTS", -59,T1.mnMod.value(),59);
+      confirmVariable("    DIF - MINUTS", -59,T1.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
@@ -1478,14 +1550,14 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T1HEATT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T1 - HEAT TEMP-SUN", T1.coolingTemp.minimum(),T1.heatingTemp.value(),T1.coolingTemp.maximum());
+      confirmVariable("DIF - HEATTEMP-SUN", T1.coolingTemp.minimum(),T1.heatingTemp.value(),T1.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T1.heatingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T1 - HEAT TEMP-CLOUD", T1.coolingTemp.minimum(),T1.heatingTempCloud.value(),T1.coolingTemp.maximum());
+      confirmVariable("DIF - HEATTEMP-CLOUD", T1.coolingTemp.minimum(),T1.heatingTempCloud.value(),T1.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T1.heatingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
@@ -1494,14 +1566,14 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T1COOLT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T1 - COOL TEMP-SUN", T1.coolingTemp.minimum(),T1.coolingTemp.value(),T1.coolingTemp.maximum());
+      confirmVariable("DIF - COOLTEMP-SUN", T1.coolingTemp.minimum(),T1.coolingTemp.value(),T1.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T1.coolingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T1 - COOL TEMP-CLOUD", T1.coolingTemp.minimum(),T1.coolingTempCloud.value(),T1.coolingTemp.maximum());
+      confirmVariable("DIF - COOLTEMP-CLOUD", T1.coolingTemp.minimum(),T1.coolingTempCloud.value(),T1.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T1.coolingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
@@ -1509,16 +1581,16 @@ void menuSetParameter(){
     }
   }
   else if(!strcmp(Data, T1RAMP)){
-    confirmVariable("   T1 - RAMPING", T1.ramping.minimum(),T1.ramping.value(),T1.ramping.maximum());
+    confirmVariable("   DIF - RAMPING", T1.ramping.minimum(),T1.ramping.value(),T1.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       T1.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
-#if TIMEPOINTS >= 2
+#ifdef ENABLE_DIF
   else if(!strcmp(Data, T2TYPE)){
-    confirmType("     T2 - TYPE",T2.type.value());
+    confirmType("     DAY - TYPE",T2.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
         Data[x] = T2HOUR[x];
@@ -1529,10 +1601,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T2HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T2 - HOUR", 0,T2.hrMod.value(),23);
+      confirmVariable("     DAY - HOUR", 0,T2.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T2 - HOUR", -23,T2.hrMod.value(),23);
+      confirmVariable("     DAY - HOUR", -23,T2.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
@@ -1545,10 +1617,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T2MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T2 - MINUTS", 0,T2.mnMod.value(),59);
+      confirmVariable("    DAY - MINUTS", 0,T2.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T2 - MINUTS", -59,T2.mnMod.value(),59);
+      confirmVariable("    DAY - MINUTS", -59,T2.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
@@ -1559,14 +1631,14 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T2HEATT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T2 - HEAT TEMP-SUN", T2.coolingTemp.minimum(),T2.heatingTemp.value(),T2.coolingTemp.maximum());
+      confirmVariable("DAY - HEATTEMP-SUN", T2.coolingTemp.minimum(),T2.heatingTemp.value(),T2.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T2.heatingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T2 - HEAT TEMP-CLOUD", T2.coolingTemp.minimum(),T2.heatingTempCloud.value(),T2.coolingTemp.maximum());
+      confirmVariable("DAY - HEATTEMP-CLOUD", T2.coolingTemp.minimum(),T2.heatingTempCloud.value(),T2.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T2.heatingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
@@ -1575,14 +1647,14 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T2COOLT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T2 - COOL TEMP-SUN", T2.coolingTemp.minimum(),T2.coolingTemp.value(),T2.coolingTemp.maximum());
+      confirmVariable("DAY - COOLTEMP-SUN", T2.coolingTemp.minimum(),T2.coolingTemp.value(),T2.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T2.coolingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T2 - COOL TEMP-CLOUD", T2.coolingTemp.minimum(),T2.coolingTempCloud.value(),T2.coolingTemp.maximum());
+      confirmVariable("DAY - COOLTEMP-CLOUD", T2.coolingTemp.minimum(),T2.coolingTempCloud.value(),T2.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T2.coolingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
@@ -1590,16 +1662,107 @@ void menuSetParameter(){
     }
   }
   else if(!strcmp(Data, T2RAMP)){
-    confirmVariable("   T2 - RAMPING", T2.ramping.minimum(),T2.ramping.value(),T2.ramping.maximum());
+    confirmVariable("   DAY - RAMPING", T2.ramping.minimum(),T2.ramping.value(),T2.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       T2.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
-#if TIMEPOINTS >= 3
+
+#ifndef ENABLE_DIF
+  else if(!strcmp(Data, T2TYPE)){
+    confirmType("     DAY - TYPE",T2.type.value());
+    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+      for(int x = 0; x < Code_lenght;x++){
+        Data[x] = T2HOUR[x];
+      }
+      unpressedTimer = 0;
+      line = 0;
+    }
+  }
+  else if(!strcmp(Data, T2HOUR)){
+    if(typeSet == CLOCK){
+      confirmVariable("     DAY - HOUR", 0,T2.hrMod.value(),23);
+    }
+    else{
+      confirmVariable("     DAY - HOUR", -23,T2.hrMod.value(),23);
+    }
+    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+      hourSet = svariable;
+      for(int x = 0; x < Code_lenght;x++){
+        Data[x] = T2MIN[x];
+      }
+      unpressedTimer = 0;
+      line = 0;
+    }
+  }
+  else if(!strcmp(Data, T2MIN)){
+    if(typeSet == CLOCK){
+      confirmVariable("    DAY - MINUTS", 0,T2.mnMod.value(),59);
+    }
+    else{
+      confirmVariable("    DAY - MINUTS", -59,T2.mnMod.value(),59);
+    }
+    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+      minSet = svariable;
+      T1.type.setValue(typeSet);
+      T1.setTimepoint(hourSet, minSet);
+      T2.type.setValue(typeSet);
+      T2.setTimepoint(hourSet, minSet);
+      menu = MODE_DISPLAY;key = '8';firstPrint = true; unpressedTimer = 0; line = 0;
+    }
+  }
+  else if(!strcmp(Data, T2HEATT)){
+    if(greenhouse.weather() == SUN){
+      confirmVariable("DAY - HEATTEMP-SUN", T2.coolingTemp.minimum(),T2.heatingTemp.value(),T2.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T1.heatingTemp.setValue(fvariable);
+        T2.heatingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("DAY - HEATTEMP-CLOUD", T2.coolingTemp.minimum(),T2.heatingTempCloud.value(),T2.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T1.heatingTempCloud.setValue(fvariable);
+        T2.heatingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+  }
+  else if(!strcmp(Data, T2COOLT)){
+    if(greenhouse.weather() == SUN){
+      confirmVariable("DAY - COOLTEMP-SUN", T2.coolingTemp.minimum(),T2.coolingTemp.value(),T2.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T1.coolingTemp.setValue(fvariable);
+        T2.coolingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("DAY - COOLTEMP-CLOUD", T2.coolingTemp.minimum(),T2.coolingTempCloud.value(),T2.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T1.coolingTempCloud.setValue(fvariable);
+        T2.coolingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+  }
+  else if(!strcmp(Data, T2RAMP)){
+    confirmVariable("   DAY - RAMPING", T2.ramping.minimum(),T2.ramping.value(),T2.ramping.maximum());
+    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+      T1.ramping.setValue(usvariable);
+      T2.ramping.setValue(usvariable);
+      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+    }
+  }
+#endif
+
+
+#ifdef ENABLE_PRENIGHT
   else if(!strcmp(Data, T3TYPE)){
-    confirmType("     T3 - TYPE",T3.type.value());
+    confirmType("   PREN - TYPE",T3.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
         Data[x] = T3HOUR[x];
@@ -1610,10 +1773,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T3HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T3 - HOUR", 0,T3.hrMod.value(),23);
+      confirmVariable("   PREN - HOUR", 0,T3.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T3 - HOUR", -23,T3.hrMod.value(),23);
+      confirmVariable("   PREN - HOUR", -23,T3.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
@@ -1626,10 +1789,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T3MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T3 - MINUTS", 0,T3.mnMod.value(),59);
+      confirmVariable("  PREN - MINUTS", 0,T3.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T3 - MINUTS", -59,T3.mnMod.value(),59);
+      confirmVariable("  PREN - MINUTS", -59,T3.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
@@ -1640,14 +1803,14 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T3HEATT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T3 - HEAT TEMP-SUN", T3.coolingTemp.minimum(),T3.heatingTemp.value(),T3.coolingTemp.maximum());
+      confirmVariable("PREN - HEATTEMP-SUN", T3.coolingTemp.minimum(),T3.heatingTemp.value(),T3.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T3.heatingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T3 - HEAT TEMP-CLOUD", T3.coolingTemp.minimum(),T3.heatingTempCloud.value(),T3.coolingTemp.maximum());
+      confirmVariable("PREN - HEATTEMP-CLOUD", T3.coolingTemp.minimum(),T3.heatingTempCloud.value(),T3.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T3.heatingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
@@ -1656,14 +1819,14 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T3COOLT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T3 - COOL TEMP-SUN", T3.coolingTemp.minimum(),T3.coolingTemp.value(),T3.coolingTemp.maximum());
+      confirmVariable("PREN - COOLTEMP-SUN", T3.coolingTemp.minimum(),T3.coolingTemp.value(),T3.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T3.coolingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T3 - COOL TEMP-CLOUD", T3.coolingTemp.minimum(),T3.coolingTempCloud.value(),T3.coolingTemp.maximum());
+      confirmVariable("PREN - COOLTEMP-CLOUD", T3.coolingTemp.minimum(),T3.coolingTempCloud.value(),T3.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T3.coolingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
@@ -1671,16 +1834,16 @@ void menuSetParameter(){
     }
   }
   else if(!strcmp(Data, T3RAMP)){
-    confirmVariable("   T3 - RAMPING", T3.ramping.minimum(),T3.ramping.value(),T3.ramping.maximum());
+    confirmVariable("  PREN - RAMPING", T3.ramping.minimum(),T3.ramping.value(),T3.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       T3.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
-#if TIMEPOINTS >= 4
+#ifdef ENABLE_PRENIGHT
   else if(!strcmp(Data, T4TYPE)){
-    confirmType("     T4 - TYPE",T4.type.value());
+    confirmType("   NIGHT - TYPE",T4.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
         Data[x] = T4HOUR[x];
@@ -1691,10 +1854,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T4HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T4 - HOUR", 0,T4.hrMod.value(),23);
+      confirmVariable("   NIGHT - HOUR", 0,T4.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T4 - HOUR", -23,T4.hrMod.value(),23);
+      confirmVariable("   NIGHT - HOUR", -23,T4.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
@@ -1707,10 +1870,10 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T4MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T4 - MINUTS", 0,T4.mnMod.value(),59);
+      confirmVariable("  NIGHT - MINUTS", 0,T4.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T4 - MINUTS", -59,T4.mnMod.value(),59);
+      confirmVariable("  NIGHT - MINUTS", -59,T4.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
@@ -1721,14 +1884,14 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T4HEATT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T4 - HEAT TEMP-SUN", T4.coolingTemp.minimum(),T4.heatingTemp.value(),T4.coolingTemp.maximum());
+      confirmVariable("NIGHT - HEATTEMP-SUN", T4.coolingTemp.minimum(),T4.heatingTemp.value(),T4.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T4.heatingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T4 - HEAT TEMP-CLOUD", T4.coolingTemp.minimum(),T4.heatingTempCloud.value(),T4.coolingTemp.maximum());
+      confirmVariable("NIGHT - HEATTEMP-CLOUD", T4.coolingTemp.minimum(),T4.heatingTempCloud.value(),T4.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T4.heatingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
@@ -1737,14 +1900,14 @@ void menuSetParameter(){
   }
   else if(!strcmp(Data, T4COOLT)){
     if(greenhouse.weather() == SUN){
-      confirmVariable("T4 - COOL TEMP-SUN", T4.coolingTemp.minimum(),T4.coolingTemp.value(),T4.coolingTemp.maximum());
+      confirmVariable("NIGHT - COOLTEMP-SUN", T4.coolingTemp.minimum(),T4.coolingTemp.value(),T4.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T4.coolingTemp.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
       }
     }
     else if(greenhouse.weather() == CLOUD){
-      confirmVariable("T4 - COOL TEMP-CLOUD", T4.coolingTemp.minimum(),T4.coolingTempCloud.value(),T4.coolingTemp.maximum());
+      confirmVariable("NIGHT - COOLTEMP-CLOUD", T4.coolingTemp.minimum(),T4.coolingTempCloud.value(),T4.coolingTemp.maximum());
       if((keyPressed == 'D')&&(unpressedTimer > 1000)){
         T4.coolingTempCloud.setValue(fvariable);
         menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
@@ -1752,83 +1915,97 @@ void menuSetParameter(){
     }
   }
   else if(!strcmp(Data, T4RAMP)){
-    confirmVariable("   T4 - RAMPING", T4.ramping.minimum(),T4.ramping.value(),T4.ramping.maximum());
+    confirmVariable(" NIGHT - RAMPING", T4.ramping.minimum(),T4.ramping.value(),T4.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       T4.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
 #endif
-#if TIMEPOINTS >= 5
-  else if(!strcmp(Data, T5TYPE)){
-    confirmType("     T5 - TYPE",T5.type.value());
+#ifndef ENABLE_PRENIGHT
+  else if(!strcmp(Data, T4TYPE)){
+    confirmType("   NIGHT - TYPE",T4.type.value());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       for(int x = 0; x < Code_lenght;x++){
-        Data[x] = T5HOUR[x];
-        Serial.print("");
-        Serial.print(Data[x]);
+        Data[x] = T4HOUR[x];
       }
-      Serial.println("");
       unpressedTimer = 0;
       line = 0;
     }
   }
-  else if(!strcmp(Data, T5HOUR)){
+  else if(!strcmp(Data, T4HOUR)){
     if(typeSet == CLOCK){
-      confirmVariable("     T5 - HOUR", 0,T5.hrMod.value(),23);
+      confirmVariable("   NIGHT - HOUR", 0,T4.hrMod.value(),23);
     }
     else{
-      confirmVariable("     T5 - HOUR", -23,T5.hrMod.value(),23);
+      confirmVariable("   NIGHT - HOUR", -23,T4.hrMod.value(),23);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       hourSet = svariable;
       for(int x = 0; x < Code_lenght;x++){
-        Data[x] = T5MIN[x];
+        Data[x] = T4MIN[x];
       }
       unpressedTimer = 0;
       line = 0;
     }
   }
-  else if(!strcmp(Data, T5MIN)){
+  else if(!strcmp(Data, T4MIN)){
     if(typeSet == CLOCK){
-      confirmVariable("    T5 - MINUTS", 0,T5.mnMod.value(),59);
+      confirmVariable("  NIGHT - MINUTS", 0,T4.mnMod.value(),59);
     }
     else{
-      confirmVariable("    T5 - MINUTS", -59,T5.mnMod.value(),59);
+      confirmVariable("  NIGHT - MINUTS", -59,T4.mnMod.value(),59);
     }
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
       minSet = svariable;
-      T5.type.setValue(typeSet);
-      T5.setTimepoint(hourSet, minSet);
+      T3.type.setValue(typeSet);
+      T3.setTimepoint(hourSet, minSet);
+      T4.type.setValue(typeSet);
+      T4.setTimepoint(hourSet, minSet);
       menu = MODE_DISPLAY;key = '8';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }
-  else if(!strcmp(Data, T5HEATT)){
-    confirmVariable("  T5 - HEAT TEMP", T5.coolingTemp.minimum(),T5.heatingTemp.value(),T5.coolingTemp.maximum());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T5.heatingTemp.setValue(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+  else if(!strcmp(Data, T4HEATT)){
+    if(greenhouse.weather() == SUN){
+      confirmVariable("NIGHT - HEATTEMP-SUN", T4.coolingTemp.minimum(),T4.heatingTemp.value(),T4.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.heatingTemp.setValue(fvariable);
+        T4.heatingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("NIGHT - HEATTEMP-CLOUD", T4.coolingTemp.minimum(),T4.heatingTempCloud.value(),T4.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.heatingTempCloud.setValue(fvariable);
+        T4.heatingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
-  else if(!strcmp(Data, T5COOLT)){
-    confirmVariable("  T5 - COOL TEMP", T5.coolingTemp.minimum(),T5.coolingTemp.value(),T5.coolingTemp.maximum());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T5.coolingTemp.setValue(fvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+  else if(!strcmp(Data, T4COOLT)){
+    if(greenhouse.weather() == SUN){
+      confirmVariable("NIGHT - COOLTEMP-SUN", T4.coolingTemp.minimum(),T4.coolingTemp.value(),T4.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.coolingTemp.setValue(fvariable);
+        T4.coolingTemp.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
+    }
+    else if(greenhouse.weather() == CLOUD){
+      confirmVariable("NIGHT - COOLTEMP-CLD", T4.coolingTemp.minimum(),T4.coolingTempCloud.value(),T4.coolingTemp.maximum());
+      if((keyPressed == 'D')&&(unpressedTimer > 1000)){
+        T3.coolingTempCloud.setValue(fvariable);
+        T4.coolingTempCloud.setValue(fvariable);
+        menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
+      }
     }
   }
-  else if(!strcmp(Data, T5RAMP)){
-    confirmVariable("   T5 - RAMPING", T5.ramping.minimum(),T5.ramping.value(),T5.ramping.maximum());
+  else if(!strcmp(Data, T4RAMP)){
+    confirmVariable(" NIGHT - RAMPING", T4.ramping.minimum(),T4.ramping.value(),T4.ramping.maximum());
     if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T5.ramping.setValue(usvariable);
-      menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
-    }
-  }
-
-  else if(!strcmp(Data, T5RAMP)){
-    confirmVariable("   T5 - RAMPING", T5.ramping.minimum(),T5.ramping.value(),T5.ramping.maximum());
-    if((keyPressed == 'D')&&(unpressedTimer > 1000)){
-      T5.ramping.setValue(usvariable);
+      T3.ramping.setValue(usvariable);
+      T4.ramping.setValue(usvariable);
       menu = MODE_DISPLAY;key = '9';firstPrint = true; unpressedTimer = 0; line = 0;
     }
   }

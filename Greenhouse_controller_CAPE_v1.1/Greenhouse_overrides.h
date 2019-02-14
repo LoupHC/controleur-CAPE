@@ -47,76 +47,10 @@ boolean deshum = false;
 #ifdef FAN1_DESHUM
   boolean fan1Deshum = false;
 #endif
-#ifdef FAN2_DESHUM
-  boolean fan2Deshum = false;
-#endif
 #ifdef HEATER1_DESHUM
   boolean heater1Deshum = false;
 #endif
-//Override : rollup calibration
-#ifdef R1_RECALIBRATE
-  boolean safetyCycle1 = false;
-  elapsedMillis safetyTimer1;
-#endif
-#ifdef R2_RECALIBRATE
-  boolean safetyCycle2 = false;
-  elapsedMillis safetyTimer2;
-#endif
-//Override : full ventilation
   boolean fullVentOverride = false;
-
-#if defined(R1_RECALIBRATE) &&  ROLLUPS >= 1
-void recalibrateR1(){
-    if((R1.incrementCounter() == R1.increments())&&(R1.isMoving() == false)){
-      if(safetyCycle1 == false){
-        safetyCycle1 = true;
-        safetyTimer1 = 0;
-      }
-      if(safetyTimer1 > (unsigned long)SAFETY_DELAY*60000){
-        R1.setIncrementCounter(0);
-        R1.forceMove(R1.rotationUp.value(), R1.increments());
-        safetyCycle1 = false;
-      }
-    }
-    else if((R1.incrementCounter() == 0)&&(R1.isMoving() == false)){
-      if(safetyCycle1 == false){
-        safetyCycle1 = true;
-        safetyTimer1 = 0;
-      }
-      if(safetyTimer1 > (unsigned long)SAFETY_DELAY*60000){
-        R1.setIncrementCounter(R1.increments());
-        R1.forceMove(R1.rotationDown.value(), 0);
-        safetyCycle1 = false;
-      }
-    }
-}
-#endif
-#if defined(R2_RECALIBRATE) &&  ROLLUPS == 2
-void recalibrateR2(){
-    if((R2.incrementCounter() == R2.increments())&&(R2.isMoving() == false)){
-      if(safetyCycle2 == false){
-        safetyCycle2 = true;
-        safetyTimer2 = 0;
-      }
-      if(safetyTimer2 > (unsigned long)SAFETY_DELAY*60000){
-        R2.setIncrementCounter(0);
-        R2.forceMove(R2.rotationUp.value(), R2.increments());
-        safetyCycle2 = false;
-      }
-    }
-    else if((R2.incrementCounter() == 0)&&(R2.isMoving() == false)){
-      if(safetyCycle2 == false){
-        safetyCycle2 = true;
-        safetyTimer2 = 0;
-      }
-      if(safetyTimer2 > (unsigned long)SAFETY_DELAY*60000){
-        R2.setIncrementCounter(R2.increments());
-        R2.forceMove(R2.rotationDown.value(), 0);
-        safetyCycle2 = false;
-      }
-    }
-  }
-  #endif
 
 /*FULL VENTILATION - FIX OVERRIDE
 
@@ -187,15 +121,6 @@ void deshumCycle(){
     }
     else{
       fan1Deshum = false;
-    }
-  #endif
-  #if defined(FAN2_DESHUM) && FANS == 2
-    if((((greenhouse.rightNow(2) == FAN2_DESHUM_START_HOUR)&&(greenhouse.rightNow(1) >= FAN2_DESHUM_START_MIN))||(greenhouse.rightNow(2)>FAN2_DESHUM_START_HOUR))&&(((greenhouse.rightNow(2) == FAN2_DESHUM_STOP_HOUR)&&(greenhouse.rightNow(1) < FAN2_DESHUM_STOP_MIN))||(greenhouse.rightNow(2) < FAN2_DESHUM_STOP_HOUR))&&(greenhouseTemperature.value() > DESHUM_MININIM)&&(deshum == true)){
-      F2.forceAction(true);
-      fan2Deshum = true;
-    }
-    else{
-      fan2Deshum = false;
     }
   #endif
   #if defined(HEATER1_DESHUM) && HEATERS >= 1
