@@ -320,7 +320,7 @@ void Rollup::startMove(short targetStage, short targetIncrement){
   _stageMove = targetStage - _stage;
 
   calibrateStages();
-  updateTimings();
+  checkTimings();
 
   //If motor goes up, calculate for how much time
   if (_incrementMove > 0){
@@ -358,6 +358,9 @@ void Rollup::startMove(String type, short targetIncrement){
   if(type == "RELATIVE"){
     desactivateRoutine("RELATIVE");
   }
+  calibrateStages();
+  checkTimings();
+
   if (_incrementMove > 0){
     startOpening();
     _moveTime = _upStep * (unsigned long)(abs(_incrementMove));
@@ -389,7 +392,7 @@ void Rollup::stopMove(){
     }
     _incrementCounter = _incrementCounter + _incrementMove;
     _incrementMove = 0;
-
+	calibrateStages();
 }
 /*RESUME CYCLE
     INITIAL CONDITION:
@@ -419,7 +422,6 @@ void Rollup::resumeCycle(String type){
   }
   else if(type == "ROUTINE"){
       if((_routine == true)&&(_routineCycle == true)){
-      _stage = _stage+_stageMove;
       _routineCycle = false;
       printEndPause();
     }
@@ -437,12 +439,13 @@ void Rollup::resumeCycle(String type){
     - reset times, moving time and stage move
 */
 void Rollup::calibrateStages(){
-  if(_stage == OFF_VAL){
-    if(_incrementCounter == OFF_VAL){
-      _incrementCounter = _increments;
-      forceMove(rotationDown.value(),0);
-    }
-    else if(_incrementCounter != OFF_VAL){
+	if(_stage == OFF_VAL){
+		if(_incrementCounter == OFF_VAL){
+		  _incrementCounter = _increments;
+		  forceMove(rotationDown.value(),0);
+		}
+	}
+    if(_incrementCounter != OFF_VAL){
       //If youre at top increment, consider youre at top stage
         if(_incrementCounter >= stage[_stages].target.value()){
           _stage = _stages;
@@ -451,7 +454,7 @@ void Rollup::calibrateStages(){
         else if(_incrementCounter == stage[0].target.value()){
           _stage = 0;
         }
-        //Anywhere between first and second stage increment, consider youre in the second stage
+        //Anywhere between first and second stage increment, consider youre in the first stage
         else if((_incrementCounter > stage[0].target.value())&&(_incrementCounter <= stage[1].target.value())){
           _stage = 1;
         }
@@ -465,10 +468,9 @@ void Rollup::calibrateStages(){
             }
           }
         }
-      }
       checkStageSuccession();
+      }
     }
-  }
 
 /*
 Activate or desactivate the routine function (before overriding)
@@ -613,40 +615,42 @@ void Rollup::checkTimings(){
 }
 
 void Rollup::checkStageSuccession(){
-      if(_stage != _stages){
-        if(stage[_stage].target.value() != stage[_stage+1].target.value()){
-          _upperStage = _stage+1;
-        }
-        else if(stage[_stage].target.value() != stage[_stage+2].target.value()){
-          _upperStage = _stage+2;
-        }
-        else if(stage[_stage].target.value() != stage[_stage+3].target.value()){
-          _upperStage = _stage+3;
-        }
-        else{
-          _upperStage = _stages;
-        }
-      }
-      else{
-        _upperStage = _stages;
-    }
-    if(_stage != 0){
-      if(stage[_stage].target.value() != stage[_stage-1].target.value()){
-        _lowerStage = _stage-1;
-      }
-      else if(stage[_stage].target.value() != stage[_stage-2].target.value()){
-        _lowerStage = _stage-2;
-      }
-      else if(stage[_stage].target.value() != stage[_stage-3].target.value()){
-        _lowerStage = _stage-3;
-      }
-      else{
-        _lowerStage = 0;
-      }
-    }
-    else{
-      _lowerStage = 0;
-    }
+	if(_stage != OFF_VAL){
+	  if(_stage != _stages){
+		if(stage[_stage].target.value() != stage[_stage+1].target.value()){
+		  _upperStage = _stage+1;
+			}
+			else if(stage[_stage].target.value() != stage[_stage+2].target.value()){
+			  _upperStage = _stage+2;
+			}
+			else if(stage[_stage].target.value() != stage[_stage+3].target.value()){
+			  _upperStage = _stage+3;
+			}
+			else{
+			  _upperStage = _stages;
+			}
+		  }
+		else{
+			_upperStage = _stages;
+		}
+		if(_stage != 0){
+		  if(stage[_stage].target.value() != stage[_stage-1].target.value()){
+			_lowerStage = _stage-1;
+		  }
+		  else if(stage[_stage].target.value() != stage[_stage-2].target.value()){
+			_lowerStage = _stage-2;
+		  }
+		  else if(stage[_stage].target.value() != stage[_stage-3].target.value()){
+			_lowerStage = _stage-3;
+		  }
+		  else{
+			_lowerStage = 0;
+		  }
+		}
+		else{
+		  _lowerStage = 0;
+		}
+	}
 }
 
 void Rollup::setIncrementCounter(unsigned short increment){
