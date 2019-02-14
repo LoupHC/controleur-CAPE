@@ -6,16 +6,31 @@
 //#define TEMP_DHT22
 //#define TEMP_DHT11
 //#define TEMP_DHT12
+//#define TEST_TEMP
+
+float testTemp = 15.00;
+float TEST_MAX = 30.00;
+float TEST_MIN = 15.00;
+float TEST_STEP = 0.02;
+boolean rise = true;
 
 //Humidity sensor
 //#define HUM_DHT22
 //#define HUM_DHT11
-#define HUM_DHT12
+//#define HUM_DHT12
 
 //Real time clock
 #define CLOCK_DS3231
 //#define TEST_CLOCKF
 //#define TEST_CLOCKFF
+
+int startMin = 0;
+int startHour = 5;
+int startDay = 1;
+int startMonth = 1;
+int startYear = 18;
+int MINUT_JUMPS = 1;
+
 
 //Temerature pin
 #define TEMP_SENSOR          7 //connect this pin to the DS18B20 data line
@@ -54,11 +69,6 @@ DHT12 DHT;
 
 unsigned long counter = 1;
 
-int startMin = 0;
-int startHour = 0;
-int startDay = 1;
-int startMonth = 1;
-int startYear = 0;
 
 void testTime(){
     if(startMin > 59){
@@ -103,7 +113,7 @@ void getDateAndTime(){
     rightNow[4].setValue(startMonth);
     rightNow[5].setValue(startYear);
 
-    startMin++;
+    startMin += MINUT_JUMPS;
     testTime();
 
   #endif
@@ -162,6 +172,23 @@ void getGreenhouseTemp(){
   #ifdef TEMP_DHT12
     DHT.read();
     greenhouseTemperature.setValue(DHT.temperature);
+  #endif
+
+  
+  #ifdef TEST_TEMP
+    if(testTemp <= TEST_MIN){
+      rise = true;
+    }  
+    if(testTemp >= TEST_MAX){
+      rise = false;
+    }
+    if (rise == true){
+      testTemp += TEST_STEP;
+    }
+    else{
+      testTemp -= TEST_STEP;
+    }
+  greenhouseTemperature.setValue(testTemp); 
   #endif
 
 }
