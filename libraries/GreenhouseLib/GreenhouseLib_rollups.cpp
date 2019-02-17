@@ -95,7 +95,7 @@ Rollup::Rollup(){
   _stages = MAX_STAGES;
 
   for(int x = 0; x < MAX_STAGES; x++){
-    stage[x].mod.setLimits(0,5);
+    stage[x].mod.setLimits(0,15);
     stage[x].mod.setAddress(_localIndex);
     _localIndex += sizeof(float);
     stage[x].target.setLimits(0,100);
