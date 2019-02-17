@@ -33,7 +33,7 @@ Fan::Fan(){
     _localCounter = _counter;
     _counter++;
 
-    mod.setLimits(0, 10);
+    mod.setLimits(0, 15);
     mod.setAddress(_localIndex);
     _localIndex += sizeof(float);
 
@@ -304,7 +304,7 @@ Heater::Heater(){
     _localCounter = _counter;
     _counter++;
 
-    mod.setLimits(-10, 0);
+    mod.setLimits(-15, 0);
     mod.setAddress(_localIndex);
     _localIndex += sizeof(float);
 
